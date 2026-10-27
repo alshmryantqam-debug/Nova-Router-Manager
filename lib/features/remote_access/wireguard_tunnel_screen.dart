@@ -40,7 +40,9 @@ class _WireguardTunnelScreenState extends ConsumerState<WireguardTunnelScreen> {
     finally{if(mounted)setState(()=>_busy=false);}
   }
   Future<void> _bth() async {
-    if(_service==null||_busy)return;setState(()=>_busy=true);
+    if(_service==null||_busy)return;
+    if(!await _confirm('تمكين Back To Home VPN؟','سيفعّل خدمة MikroTik Cloud ويضيف واجهة VPN وقواعدها الديناميكية. الإعداد المدمج مخصص لجهاز واحد في الوقت نفسه.'))return;
+    setState(()=>_busy=true);
     try{final r=await _service!.enableBackToHome();if(mounted)setState(() { _result=null; _config=r.config; _host='192.168.216.1'; _profileKey='bth-${DateTime.now().millisecondsSinceEpoch}'; });_msg('Back To Home جاهز؛ امسح QR.');await _load(silent:true);}
     catch(e){if(mounted)setState(()=>_error=_err(e));_msg('فشل Back To Home: ${_err(e)}',bad:true);}
     finally{if(mounted)setState(()=>_busy=false);}
