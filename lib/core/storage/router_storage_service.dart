@@ -18,6 +18,7 @@ class SavedRouter {
     required this.password,
     required this.useSsl,
     this.useRestApi = false,
+    this.knockPorts = '',
   });
 
   final String id;
@@ -28,6 +29,8 @@ class SavedRouter {
   final String password;
   final bool useSsl;
   final bool useRestApi;
+  /// Comma-separated TCP knock ports, e.g. 7000,8000. Empty disables knocking.
+  final String knockPorts;
 
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,
@@ -38,6 +41,7 @@ class SavedRouter {
         'password': password,
         'useSsl': useSsl,
         'useRestApi': useRestApi,
+        'knockPorts': knockPorts,
       };
 
   factory SavedRouter.fromJson(Map<String, dynamic> json) {
@@ -70,6 +74,7 @@ class SavedRouter {
       password: requiredString('password'),
       useSsl: rawSsl,
       useRestApi: rawRest,
+      knockPorts: (json['knockPorts'] is String) ? json['knockPorts'] as String : '',
     );
   }
 
@@ -82,6 +87,7 @@ class SavedRouter {
     String? password,
     bool? useSsl,
     bool? useRestApi,
+    String? knockPorts,
   }) {
     return SavedRouter(
       id: id ?? this.id,
@@ -92,6 +98,7 @@ class SavedRouter {
       password: password ?? this.password,
       useSsl: useSsl ?? this.useSsl,
       useRestApi: useRestApi ?? this.useRestApi,
+      knockPorts: knockPorts ?? this.knockPorts,
     );
   }
 
@@ -106,11 +113,12 @@ class SavedRouter {
           other.username == username &&
           other.password == password &&
           other.useSsl == useSsl &&
-          other.useRestApi == useRestApi;
+          other.useRestApi == useRestApi &&
+          other.knockPorts == knockPorts;
 
   @override
   int get hashCode =>
-      Object.hash(id, name, host, port, username, password, useSsl, useRestApi);
+      Object.hash(id, name, host, port, username, password, useSsl, useRestApi, knockPorts);
 }
 
 /// Encrypted persistence for saved router profiles.
