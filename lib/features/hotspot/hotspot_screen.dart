@@ -267,7 +267,13 @@ class _GenerateTabState extends State<_GenerateTab> {
   Future<void> _generateAndExport() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    final selectedProfile = _profiles.where((profile) => profile.name == _selectedProfile).firstOrNull;
+    HotspotProfile? selectedProfile;
+    for (final profile in _profiles) {
+      if (profile.name == _selectedProfile) {
+        selectedProfile = profile;
+        break;
+      }
+    }
     if (selectedProfile == null) {
       _showSnack(context, 'أنشئ باقة من تبويب Profiles أولًا.', isError: true);
       return;
