@@ -9,8 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/storage/router_storage_service.dart';
 
 /// Secure app settings and authenticated encryption for router exports.
-class AppSecurityService {
-  AppSecurityService._();
+abstract final class AppSecurityService {
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   static const String _pinSaltKey = 'nova.app.pin.salt.v1';
@@ -213,7 +212,8 @@ class _AppPinGateState extends State<AppPinGate> with WidgetsBindingObserver {
   }
 
   Future<void> _loadLockState() async {
-    final enabled = await AppSecurityService.isPinEnabled();
+    var enabled = false;
+    try { enabled = await AppSecurityService.isPinEnabled(); } catch (_) { enabled = false; }
     if (!mounted) return;
     setState(() {
       _pinEnabled = enabled;

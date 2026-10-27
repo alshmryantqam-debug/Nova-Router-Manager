@@ -264,11 +264,11 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     }
   }
 
-  Widget _panel({required String title, required Widget child, Widget? action}) => Container(
+  Widget _panel({required String title, required Widget child}) => Container(
     width: double.infinity, margin: const EdgeInsets.only(bottom: 13), padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(color: _settingsPanel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(.06))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))), if (action != null) action]),
+      Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
       const SizedBox(height: 10), child,
     ]),
   );

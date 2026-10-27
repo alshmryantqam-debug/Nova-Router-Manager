@@ -198,7 +198,7 @@ class _BandwidthTestScreenState extends ConsumerState<BandwidthTestScreen> {
 
   Widget _speedChart() {
     final allValues = <double>[..._rxPoints.map((point) => point.y), ..._txPoints.map((point) => point.y)];
-    final largest = allValues.fold<double>(0, (current, value) => math.max(current, value));
+    final largest = allValues.fold<double>(0, (current, value) => math.max(current, value).toDouble());
     final maxY = largest <= 0 ? 1.0 : largest * 1.15;
     final maxX = math.max(1, _sample - 1).toDouble();
     return LineChart(LineChartData(
