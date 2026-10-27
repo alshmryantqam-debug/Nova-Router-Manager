@@ -33,22 +33,22 @@ class _TelegramAlertsScreenState extends ConsumerState<TelegramAlertsScreen> {
   List<String> _hosts(String raw)=>raw.split(',').map((v)=>v.trim()).where((v)=>v.isNotEmpty).toSet().toList();
   String _encoded(String text)=>Uri.encodeComponent(text);
   String _senderSource(String token,String chat)=>':global NOVA_TG_TEXT; '
-      ':if ([:len $NOVA_TG_TEXT] = 0) do={ :set NOVA_TG_TEXT "NOVA%20router%20alert"; }; '
+      ':if ([:len \$NOVA_TG_TEXT] = 0) do={ :set NOVA_TG_TEXT "NOVA%20router%20alert"; }; '
       ':local token "'+token+'"; :local chat "'+chat+'"; '
-      ':local url ("https://api.telegram.org/bot" . $token . "/sendMessage?chat_id=" . $chat . "&text=" . $NOVA_TG_TEXT); '
-      ':do { /tool/fetch url=$url keep-result=no check-certificate=yes; } on-error={ :log error "NOVA Telegram delivery failed"; }; '
+      ':local url ("https://api.telegram.org/bot" . \$token . "/sendMessage?chat_id=" . \$chat . "&text=" . \$NOVA_TG_TEXT); '
+      ':do { /tool/fetch url=\$url keep-result=no check-certificate=yes; } on-error={ :log error "NOVA Telegram delivery failed"; }; '
       ':set NOVA_TG_TEXT "";';
   String _healthSource()=>':local cpu [:tonum [/system/resource get cpu-load]]; '
       ':local temp 0; :do { :set temp [:tonum [/system/health get [find where name="cpu-temperature"] value]]; } on-error={ :set temp 0; }; '
       ':global NOVA_TG_HOT_SENT; '
-      ':if (($cpu > 85) || ($temp > 85)) do={ :if ($NOVA_TG_HOT_SENT != true) do={ '
+      ':if ((\$cpu > 85) || (\$temp > 85)) do={ :if (\$NOVA_TG_HOT_SENT != true) do={ '
       ':global NOVA_TG_TEXT; :set NOVA_TG_TEXT "NOVA%20alert%3A%20CPU%20or%20temperature%20above%2085%25"; '
       '/system/script/run NOVA-Telegram-Send; :set NOVA_TG_HOT_SENT true; } } else={ '
-      ':if (($cpu < 80) && ($temp < 80)) do={ :set NOVA_TG_HOT_SENT false; } };';
+      ':if ((\$cpu < 80) && (\$temp < 80)) do={ :set NOVA_TG_HOT_SENT false; } };';
   String _loginSource()=>':global NOVA_TG_LAST_LOG_ID; :local entries [/log find where topics~"account"]; '
-      ':if ([:len $entries] > 0) do={ :local last [:pick $entries ([:len $entries] - 1)]; '
-      ':if ([:typeof $NOVA_TG_LAST_LOG_ID] = "nothing") do={ :set NOVA_TG_LAST_LOG_ID $last; } else={ '
-      ':if ($last != $NOVA_TG_LAST_LOG_ID) do={ :set NOVA_TG_LAST_LOG_ID $last; '
+      ':if ([:len \$entries] > 0) do={ :local last [:pick \$entries ([:len \$entries] - 1)]; '
+      ':if ([:typeof \$NOVA_TG_LAST_LOG_ID] = "nothing") do={ :set NOVA_TG_LAST_LOG_ID \$last; } else={ '
+      ':if (\$last != \$NOVA_TG_LAST_LOG_ID) do={ :set NOVA_TG_LAST_LOG_ID \$last; '
       ':global NOVA_TG_TEXT; :set NOVA_TG_TEXT "NOVA%20security%20alert%3A%20router%20account%20event"; '
       '/system/script/run NOVA-Telegram-Send; } } };';
   String _netwatchScript(String message)=>':global NOVA_TG_TEXT; :set NOVA_TG_TEXT "'+_encoded(message)+'"; /system/script/run NOVA-Telegram-Send;';
@@ -122,7 +122,7 @@ class _TelegramAlertsScreenState extends ConsumerState<TelegramAlertsScreen> {
       final scripts=await c.command('/system/script/print');
       final old=scripts.where((r)=>r['name']==tempName).toList();
       for(final row in old){final id=row['.id']??row['id'];if(id!=null&&(row['comment']??'').startsWith('NOVA:TELEGRAM:'))await c.command('/system/script/remove',args:{'.id':id});}
-      final source=':local url ("https://api.telegram.org/bot'+token+'/sendMessage?chat_id='+chat+'&text='+_encoded('NOVA test message from RouterOS')+'); /tool/fetch url=$url keep-result=no check-certificate=yes;';
+      final source=':local url ("https://api.telegram.org/bot'+token+'/sendMessage?chat_id='+chat+'&text='+_encoded('NOVA test message from RouterOS')+'); /tool/fetch url=\$url keep-result=no check-certificate=yes;';
       await c.command('/system/script/add',args:{'name':tempName,'source':source,'policy':'read,write,policy,test,sensitive','comment':'NOVA:TELEGRAM:TEST'});
       final added=await c.command('/system/script/print');
       final row=added.where((r)=>r['name']==tempName).first;
