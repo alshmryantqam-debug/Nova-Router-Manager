@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import '../network/routeros_client.dart';
+import '../../core/network/routeros_client.dart';
 
 enum HotspotCredentialMode { usernameOnly, usernameAndPassword }
 
@@ -191,7 +191,6 @@ class HotspotService {
   HotspotService(this._client);
 
   final RouterOsClient _client;
-  static const String _expirySchedulerName = 'NOVA-Hotspot-Expiry';
   static const String _characterSet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   final Random _random = Random.secure();
 
