@@ -63,7 +63,7 @@ class _RouterListScreenState extends ConsumerState<RouterListScreen> {
     try {
       final results = await Future.wait(routers.map((router) async {
         final latency = await RouterStorageService.checkPing(router.host, router.port);
-        return MapEntry(router.id, _PingStatus(latencyMs: latency, checkedAt: DateTime.now()));
+        return MapEntry(router.id, _PingStatus(latencyMs: latency));
       }));
       if (!mounted) return;
 
@@ -289,9 +289,8 @@ class _RouterListScreenState extends ConsumerState<RouterListScreen> {
 }
 
 class _PingStatus {
-  const _PingStatus({required this.latencyMs, required this.checkedAt});
+  const _PingStatus({required this.latencyMs});
   final double? latencyMs;
-  final DateTime checkedAt;
 }
 
 class _SummaryPanel extends StatelessWidget {
