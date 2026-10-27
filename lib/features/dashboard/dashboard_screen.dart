@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
-import '../../core/storage/router_storage_service.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -348,7 +347,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           final cores = int.tryParse(resource['cpu-count'] ?? '');
           final totalMemory = _number(resource['total-memory']) ?? 0;
           final freeMemory = _number(resource['free-memory']) ?? 0;
-          final usedMemory = math.max(0.0, totalMemory - freeMemory);
+          final usedMemory = math.max(0.0, totalMemory - freeMemory).toDouble();
           final ramPercent = totalMemory > 0 ? (usedMemory / totalMemory) * 100 : null;
           final uptime = resource['uptime'] ?? '—';
           final temperature = _firstNonEmpty([
@@ -391,7 +390,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       subtitle: cpu == null ? 'لا توجد قراءة' : 'استهلاك المعالج',
                       icon: Icons.memory_rounded,
                       color: const Color(0xFFFFB45E),
-                      progress: cpu == null ? null : (cpu / 100).clamp(0.0, 1.0),
+                      progress: cpu == null ? null : (cpu / 100).clamp(0.0, 1.0).toDouble(),
                     ),
                     _GaugeCard(
                       title: 'أنوية المعالج',
@@ -407,7 +406,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       subtitle: ramPercent == null ? 'لا توجد قراءة' : ramPercent.clamp(0.0, 100.0).toStringAsFixed(1) + '% مستخدمة',
                       icon: Icons.storage_rounded,
                       color: _txColor,
-                      progress: ramPercent == null ? null : (ramPercent / 100).clamp(0.0, 1.0),
+                      progress: ramPercent == null ? null : (ramPercent / 100).clamp(0.0, 1.0).toDouble(),
                     ),
                     _GaugeCard(
                       title: 'وقت التشغيل',
@@ -522,11 +521,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildLineChart() {
     final values = <double>[..._rxSpots.map((spot) => spot.y), ..._txSpots.map((spot) => spot.y)];
-    final highest = values.fold<double>(0, (current, value) => math.max(current, value));
-    final maxY = math.max(5.0, (highest / 5).ceilToDouble() * 5);
+    final highest = values.fold<double>(0, (current, value) => math.max(current, value).toDouble());
+    final maxY = math.max(5.0, (highest / 5).ceilToDouble() * 5).toDouble();
     final lastX = _rxSpots.isEmpty ? 10.0 : _rxSpots.last.x;
-    final minX = math.max(0.0, lastX - 29.0);
-    final maxX = math.max(10.0, lastX);
+    final minX = math.max(0.0, lastX - 29.0).toDouble();
+    final maxX = math.max(10.0, lastX).toDouble();
 
     return LineChart(
       LineChartData(
@@ -556,7 +555,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 23,
-              interval: math.max(1.0, (maxX - minX) / 4),
+              interval: math.max(1.0, (maxX - minX) / 4).toDouble(), 
               getTitlesWidget: (value, meta) => Text(value.toStringAsFixed(0), style: const TextStyle(color: _muted, fontSize: 9)),
             ),
           ),
@@ -747,7 +746,7 @@ class _GaugeCard extends StatelessWidget {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(value: progress!.clamp(0.0, 1.0), minHeight: 4, backgroundColor: Colors.white.withOpacity(0.07), valueColor: AlwaysStoppedAnimation<Color>(color)),
+              child: LinearProgressIndicator(value: progress!.clamp(0.0, 1.0).toDouble(), minHeight: 4, backgroundColor: Colors.white.withOpacity(0.07), valueColor: AlwaysStoppedAnimation<Color>(color)),
             ),
           ],
         ]),
