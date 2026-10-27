@@ -55,6 +55,13 @@ class NetworkToolsWorkspace extends StatelessWidget {
       );
 }
 
+String _routeKey(Map<String, String> row) => <String>[
+      row['dst-address'] ?? '',
+      row['gateway'] ?? '',
+      row['distance'] ?? '',
+      row['routing-table'] ?? 'main',
+    ].join('|');
+
 class _RouteEntry {
   const _RouteEntry({
     required this.id,
@@ -80,20 +87,20 @@ class _RouteEntry {
   final bool dynamic;
   final String comment;
 
-  factory _RouteEntry.fromMap(Map<String, String> row) {
-    final disabled = row['disabled'] == 'true';
-    final active = row['active'] == 'true';
-    final unreachable = row['unreachable'] == 'true' || (!active && !disabled);
+  factory _RouteEntry.fromMaps(Map<String, String> row, Map<String, String> status) {
+    final disabled = row['disabled'] == 'true' || status['disabled'] == 'true';
+    final active = status['active'] == 'true' || row['active'] == 'true';
+    final unreachable = status['unreachable'] == 'true';
     return _RouteEntry(
       id: row['.id'] ?? '',
       destination: row['dst-address'] ?? '0.0.0.0/0',
-      gateway: row['gateway'] ?? row['immediate-gw'] ?? '—',
-      table: row['routing-table'] ?? row['routing-mark'] ?? 'main',
-      distance: row['distance'] ?? '—',
+      gateway: row['gateway'] ?? row['immediate-gw'] ?? status['gateway'] ?? '—',
+      table: row['routing-table'] ?? status['routing-table'] ?? 'main',
+      distance: row['distance'] ?? status['distance'] ?? '—',
       active: active,
       disabled: disabled,
       unreachable: unreachable,
-      dynamic: row['dynamic'] == 'true',
+      dynamic: row['dynamic'] == 'true' || status['dynamic'] == 'true',
       comment: row['comment'] ?? '',
     );
   }
@@ -135,11 +142,36 @@ class _RoutesTabState extends State<_RoutesTab> {
     _reading = true;
     if (!silent && mounted) setState(() { _loading = true; _error = null; });
     try {
-      final rows = await widget.client.command(
-        '/ip/route/print',
-        args: const <String, String>{'.proplist': '.id,dst-address,gateway,immediate-gw,routing-table,distance,active,disabled,comment,dynamic'},
-      );
-      final routes = rows.map(_RouteEntry.fromMap).toList(growable: false)
+      final results = await Future.wait<List<Map<String, String>>>([
+        widget.client.command(
+          '/ip/route/print',
+          args: const <String, String>{'.proplist': '.id,dst-address,gateway,immediate-gw,routing-table,distance,disabled,comment,dynamic'},
+        ),
+        widget.client.command(
+          '/routing/route/print',
+          args: const <String, String>{'.proplist': 'dst-address,gateway,immediate-gw,routing-table,distance,active,disabled,unreachable,dynamic'},
+        ),
+      ]);
+      final rows = results[0];
+      final statusRows = results[1];
+      final statusByKey = <String, Map<String, String>>{};
+      for (final status in statusRows) {
+        statusByKey[_routeKey(status)] = status;
+      }
+      final routes = rows.map((row) {
+        var status = statusByKey[_routeKey(row)];
+        if (status == null) {
+          for (final candidate in statusRows) {
+            if ((candidate['dst-address'] ?? '') == (row['dst-address'] ?? '') &&
+                (candidate['distance'] ?? '') == (row['distance'] ?? '') &&
+                (candidate['routing-table'] ?? 'main') == (row['routing-table'] ?? 'main')) {
+              status = candidate;
+              break;
+            }
+          }
+        }
+        return _RouteEntry.fromMaps(row, status ?? const <String, String>{});
+      }).toList(growable: false)
         ..sort((a, b) {
           final byDestination = a.destination.compareTo(b.destination);
           return byDestination != 0 ? byDestination : a.distance.compareTo(b.distance);
@@ -211,7 +243,7 @@ class _RoutesTabState extends State<_RoutesTab> {
           else
             ..._routes.map((route) {
               final statusColor = route.disabled ? _nMuted : (route.active ? _nGreen : _nRed);
-              final status = route.disabled ? 'Disabled' : (route.active ? 'Active' : 'Unreachable / Inactive');
+              final status = route.disabled ? 'Disabled' : (route.active ? 'Active' : (route.unreachable ? 'Unreachable' : 'Inactive'));
               return Container(
                 margin: const EdgeInsets.only(bottom: 9),
                 decoration: BoxDecoration(color: _nPanel, borderRadius: BorderRadius.circular(15), border: Border.all(color: route.unreachable && !route.disabled ? _nRed.withOpacity(0.4) : Colors.white.withOpacity(0.055))),
