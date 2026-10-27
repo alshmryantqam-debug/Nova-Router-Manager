@@ -164,10 +164,16 @@ class RouterOsClient {
         ),
       );
       _authenticated = true;
-    } catch (_) {
+    } catch (error) {
+      final socketWasOpened = _connected;
       _connected = false;
       _authenticated = false;
       await _closeSocketOnly();
+      if (!socketWasOpened && (error is SocketException || error is TimeoutException)) {
+        throw RouterOsException(
+          'تعذر الوصول للمنفذ $port (تأكد من تفعيل خدمة API في IP -> Services أو عدم حظرها بالفايروول/Mangle)',
+        );
+      }
       rethrow;
     }
   }
@@ -566,7 +572,7 @@ class RouterOsClient {
     request.headers.set(HttpHeaders.acceptHeader, 'application/json');
     if (method == 'GET' && args.isNotEmpty) request.url.queryParameters;
     final response = await request.close();
-    return http.Response.bytes(await response.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk)), response.statusCode, headers: response.headers);
+    return http.Response.bytes(await response.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk)), response.statusCode);
   }
 
   Future<void> close() async {
