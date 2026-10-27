@@ -43,20 +43,84 @@ jobs:
           flutter --version
           dart --version
 
-      - name: Generate Android platform files when missing
+      - name: Ensure Android platform exists without replacing app source
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! -f android/gradlew || ( ! -f android/app/build.gradle && ! -f android/app/build.gradle.kts ) ]]; then
-            flutter create \
-              --platforms=android \
-              --project-name=nova_router_manager \
-              --org=com.nova.routermanager \
-              .
+          test -f pubspec.yaml
+          test -f lib/main.dart
+          SOURCE_HASH_BEFORE="$(sha256sum pubspec.yaml lib/main.dart | sha256sum | cut -d' ' -f1)"
+
+          if [[ ! -f android/gradlew ||
+                ( ! -f android/app/build.gradle && ! -f android/app/build.gradle.kts ) ||
+                ! -f android/app/src/main/AndroidManifest.xml ]]; then
+            echo "Android platform is missing or incomplete; regenerating platform files."
+            flutter create . --platforms=android --org com.network.routerosmanager
           fi
+
           test -f android/gradlew
           test -f android/app/src/main/AndroidManifest.xml
           chmod +x android/gradlew
+
+          SOURCE_HASH_AFTER="$(sha256sum pubspec.yaml lib/main.dart | sha256sum | cut -d' ' -f1)"
+          if [[ "$SOURCE_HASH_BEFORE" != "$SOURCE_HASH_AFTER" ]]; then
+            echo "::error::flutter create changed pubspec.yaml or lib/main.dart; refusing to continue."
+            exit 1
+          fi
+
+      - name: Configure Android network permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          text = path.read_text(encoding="utf-8")
+          required = (
+              'android.permission.INTERNET',
+              'android.permission.ACCESS_NETWORK_STATE',
+          )
+
+          if not re.search(r'<manifest\b', text):
+              sys.exit("AndroidManifest.xml has no <manifest> root.")
+          if not re.search(r'<application\b', text):
+              sys.exit("AndroidManifest.xml has no <application> element.")
+
+          for permission in required:
+              pattern = r'<uses-permission\b[^>]*android:name=["\']' + re.escape(permission) + r'["\'][^>]*/?>'
+              if not re.search(pattern, text):
+                  manifest_start = re.search(r'<manifest\b[^>]*>', text)
+                  insertion = f'\n    <uses-permission android:name="{permission}" />'
+                  text = text[:manifest_start.end()] + insertion + text[manifest_start.end():]
+
+          app_match = re.search(r'<application\b[^>]*>', text)
+          app_tag = app_match.group(0)
+          if re.search(r'\bandroid:usesCleartextTraffic\s*=', app_tag):
+              app_tag = re.sub(
+                  r'\bandroid:usesCleartextTraffic\s*=\s*["\'][^"\']*["\']',
+                  'android:usesCleartextTraffic="true"',
+                  app_tag,
+              )
+          else:
+              app_tag = app_tag[:-1] + ' android:usesCleartextTraffic="true">'
+          text = text[:app_match.start()] + app_tag + text[app_match.end():]
+
+          path.write_text(text, encoding="utf-8")
+          check = path.read_text(encoding="utf-8")
+          for permission in required:
+              if not re.search(
+                  r'<uses-permission\b[^>]*android:name=["\']' + re.escape(permission) + r'["\'][^>]*/?>',
+                  check,
+              ):
+                  sys.exit(f"Failed to inject {permission}")
+          app = re.search(r'<application\b[^>]*>', check)
+          if not app or 'android:usesCleartextTraffic="true"' not in app.group(0):
+              sys.exit("Failed to enable usesCleartextTraffic.")
+          print("Android internet permissions and cleartext traffic verified.")
+          PY
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -65,10 +129,11 @@ jobs:
         run: flutter analyze --no-pub
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Verify APK exists and is non-empty
         run: |
+          set -euo pipefail
           test -s build/app/outputs/flutter-apk/app-release.apk
           ls -lh build/app/outputs/flutter-apk/app-release.apk
 
