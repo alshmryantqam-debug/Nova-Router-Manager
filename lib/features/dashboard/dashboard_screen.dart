@@ -29,6 +29,8 @@ import '../remote_access/wireguard_tunnel_screen.dart';
 import '../remote_access/cgnat_bypass_screen.dart';
 import '../remote_access/external_security_portfwd_screen.dart';
 import '../wireless_towers/wireless_towers_screen.dart';
+import '../automation/raw_qos_wizard_screen.dart';
+import '../automation/telegram_alerts_screen.dart';
 import '../firewall_advanced/nat_address_list_screen.dart';
 import '../firewall_advanced/pcc_wizard_screen.dart';
 
@@ -40,7 +42,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers, rawQosWizard, telegramAlerts }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -325,7 +327,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                       ? const ExternalSecurityPortfwdScreen()
                                                                                       : _section == _DashboardSection.wirelessTowers
                                                                                           ? const WirelessTowersScreen()
-                                                                                          : const NetworkToolsScreen(),
+                                                                                          : _section == _DashboardSection.rawQosWizard
+                                                                                              ? const RawQosWizardScreen()
+                                                                                              : _section == _DashboardSection.telegramAlerts
+                                                                                                  ? const TelegramAlertsScreen()
+                                                                                                  : const NetworkToolsScreen(),
     );
   }
 
@@ -374,6 +380,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.cgnatBypass, Icons.public_rounded, 'تجاوز CGNAT • ZeroTier / VPN'),
             _drawerItem(_DashboardSection.externalSecurity, Icons.admin_panel_settings_rounded, 'الأمان الخارجي وتحويل المنافذ'),
             _drawerItem(_DashboardSection.wirelessTowers, Icons.cell_tower_rounded, 'الصحون والأبراج اللاسلكية'),
+            _drawerItem(_DashboardSection.rawQosWizard, Icons.shield_rounded, 'درع RAW وأولوية Ping / DNS'),
+            _drawerItem(_DashboardSection.telegramAlerts, Icons.telegram, 'تنبيهات Telegram من الراوتر'),
             const Spacer(),
             const Divider(color: Color(0xFF283142), height: 1),
             ListTile(
@@ -426,6 +434,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.cgnatBypass: return 'تجاوز CGNAT • ZeroTier / VPN';
       case _DashboardSection.externalSecurity: return 'الأمان الخارجي وتحويل المنافذ';
       case _DashboardSection.wirelessTowers: return 'الصحون والأبراج اللاسلكية';
+      case _DashboardSection.rawQosWizard: return 'درع RAW وأولوية Ping / DNS';
+      case _DashboardSection.telegramAlerts: return 'تنبيهات Telegram من الراوتر';
     }
   }
 
