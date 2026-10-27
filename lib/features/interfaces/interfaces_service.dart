@@ -72,7 +72,7 @@ class InterfacesService {
 
   Future<List<Map<String, String>>> getBridgePorts() => _client.command(
         '/interface/bridge/port/print',
-        args: const <String, String>{'.id,interface,bridge,horizon,disabled,hw,role'},
+        args: const <String, String>{'.proplist': '.id,interface,bridge,horizon,disabled,hw,role'},
       );
 
   Future<void> moveBridgePort({
