@@ -24,6 +24,7 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
   List<Map<String, String>> _vlans = [];
   List<Map<String, String>> _bridges = [];
   List<Map<String, String>> _bridgePorts = [];
+  final Map<String, String> _rates = {};
   bool _loading = true;
   String? _error;
   final Set<String> _busy = {};
@@ -56,9 +57,26 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
       final values = await Future.wait([
         service.getInterfaces(), service.getVlans(), service.getBridges(), service.getBridgePorts(),
       ]);
+      final rates = <String, String>{};
+      await Future.wait(values[0].where((row) {
+        final type = (row['type'] ?? '').toLowerCase();
+        return (row['name'] ?? '').isNotEmpty && (type.contains('ether') || type.contains('sfp'));
+      }).map((row) async {
+        final name = row['name']!;
+        try {
+          final monitor = await service.monitorEthernet(name);
+          final rate = monitor['rate'];
+          if (rate != null && rate.isNotEmpty) rates[name] = rate;
+        } catch (_) {
+          // Some virtual interfaces and unsupported ports do not expose Ethernet monitor data.
+        }
+      }));
       if (!mounted) return;
       setState(() {
         _interfaces = values[0]; _vlans = values[1]; _bridges = values[2]; _bridgePorts = values[3];
+        _rates
+          ..clear()
+          ..addAll(rates);
         _loading = false;
       });
     } catch (e) {
@@ -238,7 +256,7 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
           Row(children: [const Icon(Icons.cable, color: _interfaceAccent), const SizedBox(width: 8), Expanded(child: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
             _stateChip(state, disabled ? Colors.redAccent : running ? Colors.greenAccent : _interfaceMuted)]),
           const SizedBox(height: 8),
-          Text('${row['type'] ?? 'interface'} • RX error: ${row['rx-error'] ?? '—'} • TX drop: ${row['tx-drop'] ?? '—'}',
+          Text('${row['type'] ?? 'interface'} • Link: ${_rates[name] ?? 'غير متاح'} • RX error: ${row['rx-error'] ?? '—'} • TX drop: ${row['tx-drop'] ?? '—'}',
             style: const TextStyle(color: _interfaceMuted, fontSize: 11)),
           if ((row['comment'] ?? '').isNotEmpty) Text(row['comment']!, style: const TextStyle(color: _interfaceMuted, fontSize: 11)),
           Wrap(spacing: 2, runSpacing: 2, children: [
