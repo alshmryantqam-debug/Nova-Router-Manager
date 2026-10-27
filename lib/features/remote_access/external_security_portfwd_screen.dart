@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 
-const _bg=Color(0xFF080B12), _panel=Color(0xFF111722), _accent=Color(0xFF8B7CFF), _muted=Color(0xFF8D9AB0), _red=Color(0xFFFF657A);
+const _bg=Color(0xFF080B12), _panel=Color(0xFF111722), _accent=Color(0xFF8B7CFF), _muted=Color(0xFF8D9AB0), _green=Color(0xFF43D9A3), _red=Color(0xFFFF657A);
 class ExternalSecurityPortfwdScreen extends ConsumerStatefulWidget {
  const ExternalSecurityPortfwdScreen({super.key});
  @override ConsumerState<ExternalSecurityPortfwdScreen> createState()=>_ExternalSecurityPortfwdScreenState();
@@ -54,7 +54,7 @@ class _ExternalSecurityPortfwdScreenState extends ConsumerState<ExternalSecurity
    await c.command('/ip/firewall/filter/add',args:{'chain':'input','action':'drop','protocol':'tcp','dst-port':protected.join(','),'src-address-list':'!Trusted_Admin','place-before':'0','comment':'NOVA:PORTKNOCK:DROP'});
    await c.command('/ip/firewall/filter/add',args:{'chain':'input','action':'add-src-to-address-list','protocol':'tcp','dst-port':'$b','src-address-list':'NOVA_KNOCK_1','address-list':'Trusted_Admin','address-list-timeout':'1h','place-before':'0','comment':'NOVA:PORTKNOCK:SECOND'});
    await c.command('/ip/firewall/filter/add',args:{'chain':'input','action':'add-src-to-address-list','protocol':'tcp','dst-port':'$a','address-list':'NOVA_KNOCK_1','address-list-timeout':'15s','place-before':'0','comment':'NOVA:PORTKNOCK:FIRST'});
-   toast('أُنشئت القواعد. أدخل '+a+','+b+' في إعدادات الراوتر لتفعيل الطرق التلقائي.');await _load();
+   toast('أُنشئت القواعد. أدخل '+a.toString()+','+b.toString()+' في إعدادات الراوتر لتفعيل الطرق التلقائي.');await _load();
   }catch(e){toast('فشل إنشاء القواعد: '+err(e),bad:true);}finally{if(mounted)setState(()=>busy=false);}
  }
  Future<void> _forward() async {
