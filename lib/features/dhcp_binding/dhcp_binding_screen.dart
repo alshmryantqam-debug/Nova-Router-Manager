@@ -231,7 +231,6 @@ class _BindingsState extends State<_Bindings> {
       if (_error != null) Text(_error!, style: const TextStyle(color: _red)),
       if (_rows.isEmpty) const Text('لا توجد قواعد. استخدم + لإضافة Bypassed أو Blocked أو Regular.', style: TextStyle(color: _muted)),
       ..._rows.map((r) {
-        final id = r['.id'] ?? '';
         final type = r['type'] ?? 'regular';
         final color = type == 'blocked' ? _red : type == 'bypassed' ? _green : _accent;
         return Card(color: _panel, child: ListTile(

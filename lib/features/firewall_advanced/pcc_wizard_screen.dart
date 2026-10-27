@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 
 const Color _pccBg = Color(0xFF080B12);
@@ -18,7 +17,6 @@ class PccWizardScreen extends ConsumerStatefulWidget {
 }
 
 class _PccWizardScreenState extends ConsumerState<PccWizardScreen> {
-  RouterOsClient? _client;
   List<String> _interfaces = <String>[];
   String? _lanInterface;
   String _classifier = 'both-addresses-and-ports';
@@ -34,7 +32,6 @@ class _PccWizardScreenState extends ConsumerState<PccWizardScreen> {
   @override
   void initState() {
     super.initState();
-    _client = ref.read(activeRouterClientProvider);
     _loadInterfaces();
   }
 
@@ -57,7 +54,6 @@ class _PccWizardScreenState extends ConsumerState<PccWizardScreen> {
       final names = rows.map((row) => (row['name'] ?? '').trim()).where((name) => name.isNotEmpty).toSet().toList()..sort();
       if (!mounted) return;
       setState(() {
-        _client = client;
         _interfaces = names;
         _lanInterface = names.isEmpty ? null : names.firstWhere((name) => name.toLowerCase().startsWith('bridge'), orElse: () => names.first);
         for (var i = 0; i < _wans.length; i++) {

@@ -100,7 +100,7 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
       title: Text(title, style: const TextStyle(color: Colors.white)),
       content: SizedBox(width: 440, child: Form(key: form, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         for (final f in fields) Padding(padding: const EdgeInsets.only(bottom: 10), child: TextFormField(
-          controller: controllers[f.key], keyboardType: f.numeric ? TextInputType.number : TextInputType.text,
+          controller: controllers[f.key],
           style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
           decoration: InputDecoration(labelText: f.label, hintText: f.hint, helperText: f.helper),
           validator: f.required ? (v) => v == null || v.trim().isEmpty ? 'هذا الحقل مطلوب' : null : null,
@@ -316,7 +316,7 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
 }
 
 class _Field {
-  const _Field(this.key,this.label,{this.required=false,this.initial='',this.hint='',this.helper='',this.numeric=false});
+  const _Field(this.key,this.label,{this.required=false,this.initial='',this.hint='',this.helper=''});
   final String key,label,initial,hint,helper;
-  final bool required,numeric;
+  final bool required;
 }

@@ -142,7 +142,6 @@ class _HotspotSalesReportScreenState extends ConsumerState<HotspotSalesReportScr
     }
     var active = 0, expired = 0, unused = 0;
     var revenue = 0.0;
-    var unpriced = 0;
     for (final user in _users) {
       final comment = user['comment'] ?? '';
       final disabled = user['disabled'] == 'true';
@@ -155,7 +154,6 @@ class _HotspotSalesReportScreenState extends ConsumerState<HotspotSalesReportScr
       final fromProfile = profilePrices[user['profile'] ?? ''];
       final price = fromComment ?? fromProfile;
       if (price != null) revenue += price;
-      else unpriced++;
     }
     return Scaffold(
       backgroundColor: _salesBg,

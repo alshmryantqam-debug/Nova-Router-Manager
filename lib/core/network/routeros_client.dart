@@ -223,7 +223,7 @@ class RouterOsClient {
 
     final tag = _newTag();
     final completer = Completer<List<Map<String, String>>>();
-    _pending[tag] = _PendingRequest(completer: completer);
+    _pending[tag] = _PendingRequest(completer: completer, command: command);
     try {
       _writeSentence(_buildSentence(path, args, tag));
     } catch (error, stack) {

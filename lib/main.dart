@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/network/routeros_client.dart';
 import 'core/providers/router_providers.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/settings/app_security_service.dart';
 import 'features/routers/router_list_screen.dart';
 
 void main() {
@@ -94,7 +95,7 @@ class NovaRouterManagerApp extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: child ?? const SizedBox.shrink(),
       ),
-      home: const _NovaRoot(),
+      home: const AppPinGate(child: _NovaRoot()),
     );
   }
 }
