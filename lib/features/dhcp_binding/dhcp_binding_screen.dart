@@ -65,7 +65,7 @@ class _LeasesState extends State<_Leases> {
     if (id.isEmpty || _busy.contains(id)) return;
     setState(() => _busy.add(id));
     try {
-      await widget.client.command('/ip/dhcp-server/lease/' + operation, args: {'.id': id, ...args});
+      await widget.client.command('/ip/dhcp-server/lease/' + operation, args: {if (operation == 'make-static') 'numbers': id else '.id': id, ...args});
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success)));
       await _load();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendly(e)), backgroundColor: _red)); }
@@ -93,11 +93,11 @@ class _LeasesState extends State<_Leases> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _rows.isEmpty) return const Center(child: CircularProgressIndicator());
-    if (_error != null && _rows.isEmpty) return _Retry(title: 'تعذر تحميل DHCP Leases', error: _error!, retry: _load);
+    if (_error != null && _rows.isEmpty) return _Retry(title: 'تعذر تحميل DHCP Leases', error: _error!, retry: () => _load());
     final query = _search.text.trim().toLowerCase();
     final rows = _rows.where((r) => query.isEmpty || [r['address'] ?? '',r['mac-address'] ?? '',r['host-name'] ?? '',r['comment'] ?? ''].any((v) => v.toLowerCase().contains(query))).toList();
     return RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: [
-      _Header(title: 'DHCP Leases', count: _rows.length, refresh: _load),
+      _Header(title: 'DHCP Leases', count: _rows.length, refresh: () => _load()),
       TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث بالاسم أو IP أو MAC')),
       const SizedBox(height: 8),
       if (_error != null) Text(_error!, style: const TextStyle(color: _red)),
