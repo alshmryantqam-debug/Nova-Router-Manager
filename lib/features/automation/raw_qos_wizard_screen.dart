@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 
-const _bg=Color(0xFF080B12),_panel=Color(0xFF111722),_accent=Color(0xFF8B7CFF),_muted=Color(0xFF8D9AB0),_green=Color(0xFF43D9A3),_red=Color(0xFFFF657A);
+const _bg=Color(0xFF080B12),_panel=Color(0xFF111722),_accent=Color(0xFF8B7CFF),_muted=Color(0xFF8D9AB0),_red=Color(0xFFFF657A);
 
 class RawQosWizardScreen extends ConsumerStatefulWidget {
   const RawQosWizardScreen({super.key});
@@ -96,7 +96,7 @@ class _RawQosWizardScreenState extends ConsumerState<RawQosWizardScreen> {
     if(_client==null||_busy)return;
     final up=int.tryParse(_upload.text.trim()),down=int.tryParse(_download.text.trim());
     if(up==null||down==null||up<1||down<1||up>10000||down>10000){_toast('أدخل سرعات رفع وتنزيل من 1 إلى 10000 Mbps.',bad:true);return;}
-    if(_hasTag(_mangle,'NOVA:QOS:')||_hasTag(_trees,'NOVA:QOS:')){_toast('قواعد QoS موجودة مسبقاً. احذف قواعد NOVA:QOS أولاً لتجنب الازدواج.',bad:true);return;}
+    if(_hasTag(_mangle,'NOVA:QOS:')||_hasTag(_trees,'NOVA:QOS:')||_types.any((r)=>(r['name']??'').startsWith('NOVA-PCQ-')||(r['comment']??'').startsWith('NOVA:QOS:TYPE:'))){_toast('قواعد أو أنواع QoS موجودة مسبقاً. احذف قواعد NOVA:QOS أولاً لتجنب الازدواج.',bad:true);return;}
     if(!await _confirm('تفعيل أولوية Ping وDNS؟','ستُنشأ علامات حزم وقوائم PCQ بحدود رفع '+up.toString()+'M وتنزيل '+down.toString()+'M. أدخل السرعات الفعلية للخطوط؛ تشكيل غير مناسب قد يقلل الأداء. الأولوية تكون فعالة عند ازدحام الطوابير فقط.'))return;
     setState(()=>_busy=true);
     try{
