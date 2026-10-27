@@ -281,9 +281,9 @@ class CgnatBypassService {
     final path = _vpnPath(type);
     final safeName = name.replaceAll('"', r'\\"');
     return ':local t [' + path + ' find where name="' + safeName + '"]; '
-        ':if ([:len \\$t] > 0) do={ '
-        ':if ([' + path + ' get \\$t running] = false) do={ '
-        + path + ' disable \\$t; :delay 2s; ' + path + ' enable \\$t; '
+        ':if ([:len \$t] > 0) do={ '
+        ':if ([' + path + ' get \$t running] = false) do={ '
+        + path + ' disable \$t; :delay 2s; ' + path + ' enable \$t; '
         '} }';
   }
   String _vpnPath(String type) {
