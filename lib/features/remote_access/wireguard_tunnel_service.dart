@@ -174,15 +174,13 @@ class WireguardTunnelService {
     for(final row in peers.where((r)=>r['interface']==name && r['dynamic']!='true')) {
       final peerId=row['.id']; if(peerId!=null) await removePeer(peerId);
     }
-    if(prefix!=null) {
-      final addresses=await client.command('/ip/address/print');
-      for(final row in addresses.where((r)=>r['interface']==name && (r['comment'] ?? '').startsWith(prefix))) {
-        final rowId=row['.id']; if(rowId!=null) await client.command('/ip/address/remove',args:<String,String>{'.id':rowId});
-      }
-      final rules=await client.command('/ip/firewall/filter/print');
-      for(final row in rules.where((r)=>(r['comment'] ?? '').startsWith(prefix) || r['in-interface']==name || r['out-interface']==name)) {
-        final rowId=row['.id']; if(rowId!=null) await client.command('/ip/firewall/filter/remove',args:<String,String>{'.id':rowId});
-      }
+    final addresses=await client.command('/ip/address/print');
+    for(final row in addresses.where((r)=>r['interface']==name)) {
+      final rowId=row['.id']; if(rowId!=null) await client.command('/ip/address/remove',args:<String,String>{'.id':rowId});
+    }
+    final rules=await client.command('/ip/firewall/filter/print');
+    for(final row in rules.where((r)=>(prefix!=null && (r['comment'] ?? '').startsWith(prefix)) || r['in-interface']==name || r['out-interface']==name)) {
+      final rowId=row['.id']; if(rowId!=null) await client.command('/ip/firewall/filter/remove',args:<String,String>{'.id':rowId});
     }
     await client.command('/interface/wireguard/remove',args:<String,String>{'.id':id});
   }
