@@ -225,9 +225,9 @@ class _BindingsState extends State<_Bindings> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _rows.isEmpty) return const Center(child: CircularProgressIndicator());
-    if (_error != null && _rows.isEmpty) return _Retry(title: 'تعذر تحميل IP Bindings', error: _error!, retry: _load);
+    if (_error != null && _rows.isEmpty) return _Retry(title: 'تعذر تحميل IP Bindings', error: _error!, retry: () => _load());
     return RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: [
-      _Header(title: 'Hotspot IP Bindings', count: _rows.length, refresh: _load, add: _add),
+      _Header(title: 'Hotspot IP Bindings', count: _rows.length, refresh: () => _load(), add: _add),
       if (_error != null) Text(_error!, style: const TextStyle(color: _red)),
       if (_rows.isEmpty) const Text('لا توجد قواعد. استخدم + لإضافة Bypassed أو Blocked أو Regular.', style: TextStyle(color: _muted)),
       ..._rows.map((r) {
