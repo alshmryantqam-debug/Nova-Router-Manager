@@ -81,9 +81,8 @@ class _RouteEntry {
   final String comment;
 
   factory _RouteEntry.fromMap(Map<String, String> row) {
-    final flags = row['flags'] ?? '';
-    final disabled = row['disabled'] == 'true' || flags.contains('X');
-    final active = row['active'] == 'true' || flags.contains('A');
+    final disabled = row['disabled'] == 'true';
+    final active = row['active'] == 'true';
     final unreachable = row['unreachable'] == 'true' || (!active && !disabled);
     return _RouteEntry(
       id: row['.id'] ?? '',
@@ -94,7 +93,7 @@ class _RouteEntry {
       active: active,
       disabled: disabled,
       unreachable: unreachable,
-      dynamic: flags.contains('D') || flags.contains('C') || row['dynamic'] == 'true',
+      dynamic: row['dynamic'] == 'true',
       comment: row['comment'] ?? '',
     );
   }
@@ -138,7 +137,7 @@ class _RoutesTabState extends State<_RoutesTab> {
     try {
       final rows = await widget.client.command(
         '/ip/route/print',
-        args: const <String, String>{'.proplist': '.id,dst-address,gateway,immediate-gw,routing-table,distance,active,disabled,unreachable,flags,comment,dynamic'},
+        args: const <String, String>{'.proplist': '.id,dst-address,gateway,immediate-gw,routing-table,distance,active,disabled,comment,dynamic'},
       );
       final routes = rows.map(_RouteEntry.fromMap).toList(growable: false)
         ..sort((a, b) {
@@ -320,7 +319,6 @@ class _FirewallRule {
   final bool dynamic;
 
   factory _FirewallRule.fromMap(Map<String, String> row) {
-    final flags = row['flags'] ?? '';
     return _FirewallRule(
       id: row['.id'] ?? '',
       chain: row['chain'] ?? '—',
@@ -329,10 +327,10 @@ class _FirewallRule {
       src: row['src-address'] ?? '',
       dst: row['dst-address'] ?? '',
       protocol: row['protocol'] ?? '',
-      disabled: row['disabled'] == 'true' || flags.contains('X'),
+      disabled: row['disabled'] == 'true',
       bytes: int.tryParse(row['bytes'] ?? '') ?? 0,
       packets: int.tryParse(row['packets'] ?? '') ?? 0,
-      dynamic: flags.contains('D') || row['dynamic'] == 'true',
+      dynamic: row['dynamic'] == 'true',
     );
   }
 }
@@ -371,7 +369,7 @@ class _FirewallRulesListState extends State<_FirewallRulesList> {
         _base + '/print',
         args: const <String, String>{
           'stats': '',
-          '.proplist': '.id,chain,action,comment,src-address,dst-address,protocol,disabled,bytes,packets,flags,dynamic',
+          '.proplist': '.id,chain,action,comment,src-address,dst-address,protocol,disabled,bytes,packets,dynamic',
         },
       );
       final rules = rows.map(_FirewallRule.fromMap).toList(growable: false);
