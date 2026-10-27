@@ -79,6 +79,7 @@ class ActiveRouterClientController extends StateNotifier<RouterOsClient?> {
       username: router.username,
       password: router.password,
       useSsl: router.useSsl,
+      useRestApi: router.useRestApi,
       autoReconnect: true,
       onBadCertificate: acceptInvalidCertificate
           ? (certificate, host, port) => true
