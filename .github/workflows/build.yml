@@ -43,14 +43,34 @@ jobs:
           flutter --version
           dart --version
 
+      - name: Generate Android platform files when missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f android/gradlew || ( ! -f android/app/build.gradle && ! -f android/app/build.gradle.kts ) ]]; then
+            flutter create \
+              --platforms=android \
+              --project-name=nova_router_manager \
+              --org=com.nova.routermanager \
+              .
+          fi
+          test -f android/gradlew
+          test -f android/app/src/main/AndroidManifest.xml
+          chmod +x android/gradlew
+
       - name: Resolve dependencies
         run: flutter pub get
 
       - name: Analyze Dart source
-        run: flutter analyze
+        run: flutter analyze --no-pub
 
       - name: Build release APK
         run: flutter build apk --release
+
+      - name: Verify APK exists and is non-empty
+        run: |
+          test -s build/app/outputs/flutter-apk/app-release.apk
+          ls -lh build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
