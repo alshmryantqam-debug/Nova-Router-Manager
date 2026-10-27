@@ -56,8 +56,8 @@ class _RawQosWizardScreenState extends ConsumerState<RawQosWizardScreen> {
       for(final list in const ['NOVA_SYN_FLOOD','NOVA_PORT_SCANNERS']){
         await _add('/ip/firewall/raw/add',{'chain':'prerouting','in-interface-list':'WAN','src-address-list':list,'action':'drop','place-before':'0','comment':'NOVA:RAW:SHIELD:BLACKLIST:'+list});
       }
-      await _add('/ip/firewall/filter/add',{'chain':'input','in-interface-list':'WAN','protocol':'tcp','tcp-flags':'syn,!ack','connection-state':'new','connection-limit':'100,32','action':'add-src-to-address-list','address-list':'NOVA_SYN_FLOOD','address-list-timeout':'10m','comment':'NOVA:RAW:DETECT:SYN'});
-      await _add('/ip/firewall/filter/add',{'chain':'input','in-interface-list':'WAN','protocol':'tcp','psd':'21,3s,3,1','action':'add-src-to-address-list','address-list':'NOVA_PORT_SCANNERS','address-list-timeout':'1d','comment':'NOVA:RAW:DETECT:PSD'});
+      await _add('/ip/firewall/filter/add',{'chain':'input','in-interface-list':'WAN','protocol':'tcp','tcp-flags':'syn,!ack','connection-state':'new','connection-limit':'100,32','action':'add-src-to-address-list','address-list':'NOVA_SYN_FLOOD','address-list-timeout':'10m','place-before':'0','comment':'NOVA:RAW:DETECT:SYN'});
+      await _add('/ip/firewall/filter/add',{'chain':'input','in-interface-list':'WAN','protocol':'tcp','psd':'21,3s,3,1','action':'add-src-to-address-list','address-list':'NOVA_PORT_SCANNERS','address-list-timeout':'1d','place-before':'0','comment':'NOVA:RAW:DETECT:PSD'});
       _toast('أُضيفت قواعد درع RAW ومكتشف الماسحات. راجع ترتيبها في RouterOS.');
       await _load();
     }catch(e){_toast('قد تكون أضيفت بعض القواعد قبل الخطأ: '+_err(e)+'. راجع التعليقات NOVA:RAW.',bad:true);await _load();}
@@ -102,10 +102,19 @@ class _RawQosWizardScreenState extends ConsumerState<RawQosWizardScreen> {
     try{
       await _add('/queue/type/add',{'name':'NOVA-PCQ-UP','kind':'pcq','pcq-classifier':'src-address','comment':'NOVA:QOS:TYPE:UP'});
       await _add('/queue/type/add',{'name':'NOVA-PCQ-DOWN','kind':'pcq','pcq-classifier':'dst-address','comment':'NOVA:QOS:TYPE:DOWN'});
-      for(final protocol in const ['icmp','udp','tcp']){
-        final extra=protocol=='icmp'?<String,String>{}:protocol=='udp'?<String,String>{'dst-port':'53,3478-3481,3074,27000-27100'}:<String,String>{'dst-port':'53'};
-        await _add('/ip/firewall/mangle/add',{'chain':'prerouting','protocol':protocol,...extra,'action':'mark-packet','new-packet-mark':'NOVA-PRIO-DOWN','passthrough':'no','comment':'NOVA:QOS:DOWN:'+protocol});
-        await _add('/ip/firewall/mangle/add',{'chain':'postrouting','protocol':protocol,...extra,'action':'mark-packet','new-packet-mark':'NOVA-PRIO-UP','passthrough':'no','comment':'NOVA:QOS:UP:'+protocol});
+      final classifiers=<Map<String,String>>[
+        {'protocol':'icmp','direction':'all'},
+        {'protocol':'udp','direction':'dst','ports':'53,3478-3481,3074,27000-27100'},
+        {'protocol':'udp','direction':'src','ports':'53,3478-3481,3074,27000-27100'},
+        {'protocol':'tcp','direction':'dst','ports':'53'},
+        {'protocol':'tcp','direction':'src','ports':'53'},
+      ];
+      for(final classifier in classifiers){
+        final protocol=classifier['protocol']!;
+        final direction=classifier['direction']!;
+        final portArgs=direction=='all'?<String,String>{}:<String,String>{direction=='src'?'src-port':'dst-port':classifier['ports']!};
+        await _add('/ip/firewall/mangle/add',{'chain':'prerouting','in-interface-list':'WAN','protocol':protocol,...portArgs,'action':'mark-packet','new-packet-mark':'NOVA-PRIO-DOWN','passthrough':'no','comment':'NOVA:QOS:DOWN:'+protocol+':'+direction});
+        await _add('/ip/firewall/mangle/add',{'chain':'postrouting','out-interface-list':'WAN','protocol':protocol,...portArgs,'action':'mark-packet','new-packet-mark':'NOVA-PRIO-UP','passthrough':'no','comment':'NOVA:QOS:UP:'+protocol+':'+direction});
       }
       await _add('/ip/firewall/mangle/add',{'chain':'output','protocol':'icmp','action':'mark-packet','new-packet-mark':'NOVA-PRIO-UP','passthrough':'no','comment':'NOVA:QOS:ROUTER-ICMP'});
       await _add('/queue/tree/add',{'name':'NOVA-QOS-Upload-Priority','parent':'global-out','packet-mark':'NOVA-PRIO-UP','queue':'NOVA-PCQ-UP','priority':'1','max-limit':up.toString()+'M','comment':'NOVA:QOS:TREE:UP'});
