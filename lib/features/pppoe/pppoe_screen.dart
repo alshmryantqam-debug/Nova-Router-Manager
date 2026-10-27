@@ -310,7 +310,7 @@ class _PppoeSecretsTabState extends State<_PppoeSecretsTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
         children: [
-          _PppoeHeader(title: 'PPPoE Secrets', subtitle: 'قراءة وتعديل الحسابات من /ppp/secret', count: _secrets.length, onRefresh: _load),
+          _PppoeHeader(title: 'PPPoE Secrets', subtitle: 'قراءة وتعديل الحسابات من /ppp/secret', count: _secrets.length, onRefresh: _load, onAdd: _addSecret),
           const SizedBox(height: 12),
           TextField(
             onChanged: (value) => setState(() => _filter = value),
@@ -508,11 +508,12 @@ class _PppoeActiveTabState extends State<_PppoeActiveTab> {
 }
 
 class _PppoeHeader extends StatelessWidget {
-  const _PppoeHeader({required this.title, required this.subtitle, required this.count, required this.onRefresh});
+  const _PppoeHeader({required this.title, required this.subtitle, required this.count, required this.onRefresh, this.onAdd});
   final String title;
   final String subtitle;
   final int count;
   final VoidCallback onRefresh;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -532,7 +533,8 @@ class _PppoeHeader extends StatelessWidget {
           ])),
           Text(count.toString(), style: const TextStyle(color: _ppGreen, fontSize: 22, fontWeight: FontWeight.w900)),
           IconButton(onPressed: onRefresh, tooltip: 'تحديث', icon: const Icon(Icons.refresh_rounded, color: _ppAccent)),
-          IconButton(onPressed: null, tooltip: 'إضافة', icon: const Icon(Icons.person_add_alt_1_rounded, color: _ppAccent)),
+          if (onAdd != null)
+            IconButton(onPressed: onAdd, tooltip: 'إضافة مشترك', icon: const Icon(Icons.person_add_alt_1_rounded, color: _ppAccent)),
         ]),
       );
 }
