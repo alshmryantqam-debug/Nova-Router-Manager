@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
+import '../../core/storage/router_storage_service.dart';
 import '../hotspot/hotspot_screen.dart';
 import '../dhcp_binding/dhcp_binding_screen.dart';
 import '../system/system_manager_screen.dart';
@@ -20,6 +22,8 @@ import '../diagnostics/api_terminal_screen.dart';
 import '../network/netwatch_wan_screen.dart';
 import '../hotspot/hotspot_sales_report_screen.dart';
 import '../ip_management/ip_arp_dns_screen.dart';
+import '../firewall_advanced/nat_address_list_screen.dart';
+import '../firewall_advanced/pcc_wizard_screen.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -29,7 +33,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -297,7 +301,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                       ? const HotspotSalesReportScreen()
                                                       : _section == _DashboardSection.ipArpDns
                                                           ? const IpArpDnsScreen()
-                                                          : const NetworkToolsScreen(),
+                                                          : _section == _DashboardSection.natAddressLists
+                                                              ? const NatAddressListScreen()
+                                                              : _section == _DashboardSection.pccWizard
+                                                                  ? const PccWizardScreen()
+                                                                  : const NetworkToolsScreen(),
     );
   }
 
@@ -338,6 +346,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.netwatch, Icons.monitor_heart_outlined, 'Netwatch • مراقبة WAN'),
             _drawerItem(_DashboardSection.hotspotSales, Icons.payments_outlined, 'تقارير مبيعات الكروت'),
             _drawerItem(_DashboardSection.ipArpDns, Icons.dns_outlined, 'IP • ARP • DNS'),
+            _drawerItem(_DashboardSection.natAddressLists, Icons.rule_folder_outlined, 'NAT • Address Lists'),
+            _drawerItem(_DashboardSection.pccWizard, Icons.device_hub_outlined, 'PCC Load Balancing Wizard'),
             const Spacer(),
             const Divider(color: Color(0xFF283142), height: 1),
             ListTile(
@@ -382,6 +392,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.netwatch: return 'Netwatch • مراقبة WAN';
       case _DashboardSection.hotspotSales: return 'تقارير مبيعات الكروت';
       case _DashboardSection.ipArpDns: return 'IP • ARP • DNS';
+      case _DashboardSection.natAddressLists: return 'NAT • Address Lists';
+      case _DashboardSection.pccWizard: return 'PCC Load Balancing Wizard';
     }
   }
 
