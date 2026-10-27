@@ -25,6 +25,7 @@ import '../ip_management/ip_arp_dns_screen.dart';
 import '../diagnostics/bandwidth_test_screen.dart';
 import '../settings/app_settings_screen.dart';
 import '../settings/app_security_service.dart';
+import '../remote_access/wireguard_tunnel_screen.dart';
 import '../firewall_advanced/nat_address_list_screen.dart';
 import '../firewall_advanced/pcc_wizard_screen.dart';
 
@@ -36,7 +37,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -313,7 +314,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                       ? const BandwidthTestScreen()
                                                                       : _section == _DashboardSection.appSettings
                                                                           ? const AppSettingsScreen()
-                                                                          : const NetworkToolsScreen(),
+                                                                          : _section == _DashboardSection.remoteAccess
+                                                                              ? const WireguardTunnelScreen()
+                                                                              : const NetworkToolsScreen(),
     );
   }
 
@@ -358,6 +361,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.pccWizard, Icons.device_hub_outlined, 'PCC Load Balancing Wizard'),
             _drawerItem(_DashboardSection.bandwidthTest, Icons.speed_rounded, 'Bandwidth Test'),
             _drawerItem(_DashboardSection.appSettings, Icons.security_rounded, 'إعدادات التطبيق والأمان'),
+            _drawerItem(_DashboardSection.remoteAccess, Icons.vpn_lock_rounded, 'الوصول الخارجي والأنفاق'),
             const Spacer(),
             const Divider(color: Color(0xFF283142), height: 1),
             ListTile(
@@ -406,6 +410,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.pccWizard: return 'PCC Load Balancing Wizard';
       case _DashboardSection.bandwidthTest: return 'Bandwidth Test';
       case _DashboardSection.appSettings: return 'إعدادات التطبيق والأمان';
+      case _DashboardSection.remoteAccess: return 'الوصول الخارجي والأنفاق';
     }
   }
 
