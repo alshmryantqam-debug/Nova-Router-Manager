@@ -9,6 +9,7 @@ import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 import 'hotspot_service.dart';
 import 'voucher_pdf_service.dart';
+import 'hotspot_sales_report_screen.dart';
 
 const Color _hsBg = Color(0xFF080B12);
 const Color _hsPanel = Color(0xFF111722);
@@ -39,7 +40,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = HotspotService(client);
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Column(
         children: [
           Container(
@@ -55,6 +56,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
                 Tab(icon: Icon(Icons.confirmation_number_rounded, size: 18), text: 'Generate'),
                 Tab(icon: Icon(Icons.style_rounded, size: 18), text: 'Users'),
                 Tab(icon: Icon(Icons.layers_rounded, size: 18), text: 'Profiles'),
+                Tab(icon: Icon(Icons.payments_outlined, size: 18), text: 'Sales'),
               ],
             ),
           ),
@@ -65,6 +67,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
                 _GenerateTab(service: service),
                 _UsersTab(service: service),
                 _ProfilesTab(service: service),
+                HotspotSalesReportScreen(client: client),
               ],
             ),
           ),
