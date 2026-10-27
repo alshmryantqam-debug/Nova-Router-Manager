@@ -525,6 +525,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
   late final TextEditingController _port;
   late final TextEditingController _username;
   late final TextEditingController _password;
+  late final TextEditingController _knockPorts;
   late final String _id;
 
   bool _ssl = false;
@@ -546,9 +547,10 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
     _port = TextEditingController(text: '${router?.port ?? 8728}');
     _username = TextEditingController(text: router?.username ?? 'admin');
     _password = TextEditingController(text: router?.password ?? '');
+    _knockPorts = TextEditingController(text: router?.knockPorts ?? '');
     _ssl = router?.useSsl ?? false;
     _restApi = router?.useRestApi ?? false;
-    for (final controller in [_name, _host, _port, _username, _password]) {
+    for (final controller in [_name, _host, _port, _username, _password, _knockPorts]) {
       controller.addListener(_invalidateTest);
     }
   }
@@ -581,6 +583,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
         _ssl.toString(),
         _restApi.toString(),
         _allowBadCert.toString(),
+        _knockPorts.text.trim(),
       ].join(String.fromCharCode(31));
 
   SavedRouter _buildRouter() => SavedRouter(
@@ -592,6 +595,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
         password: _password.text,
         useSsl: _ssl,
         useRestApi: _restApi,
+        knockPorts: _knockPorts.text.trim(),
       );
 
   String? _required(String? value, String label) =>
@@ -791,6 +795,29 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
                     title: const Text('استخدام REST API (RouterOS v7)', style: TextStyle(color: Colors.white, fontSize: 12)),
                     subtitle: const Text('HTTP 80 أو HTTPS 443 بدل منفذ API 8728/8729', style: TextStyle(color: _muted, fontSize: 10)),
                   ),
+                ),
+                const SizedBox(height: 14),
+                const _FieldLabel(label: 'منافذ Port Knocking (اختياري)', icon: Icons.door_front_door_outlined),
+                TextFormField(
+                  controller: _knockPorts,
+                  textDirection: TextDirection.ltr,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9, ]'))],
+                  decoration: _inputDecoration('7000,8000').copyWith(
+                    helperText: 'تُرسل بالترتيب قبل الاتصال. اتركه فارغًا لتعطيل الطرق التلقائي.',
+                    helperStyle: const TextStyle(color: _muted, fontSize: 10),
+                  ),
+                  validator: (value) {
+                    final raw = (value ?? '').trim();
+                    if (raw.isEmpty) return null;
+                    final ports = raw.split(',');
+                    if (ports.any((item) {
+                      final port = int.tryParse(item.trim());
+                      return port == null || port < 1 || port > 65535;
+                    })) return 'أدخل منافذ صحيحة مفصولة بفواصل';
+                    if (ports.length < 2) return 'استخدم منفذين على الأقل، مثل 7000,8000';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 14),
                 const _FieldLabel(label: 'اسم المستخدم', icon: Icons.person_outline_rounded),
