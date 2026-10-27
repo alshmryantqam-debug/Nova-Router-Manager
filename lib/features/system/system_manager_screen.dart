@@ -114,11 +114,11 @@ class _ScriptsTabState extends State<_ScriptsTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _scripts.isEmpty) return const Center(child: CircularProgressIndicator(color: _smAccent));
-    if (_error != null && _scripts.isEmpty) return _SmRetry(title: 'تعذر قراءة السكريبتات', error: _error!, retry: _load);
+    if (_error != null && _scripts.isEmpty) return _SmRetry(title: 'تعذر قراءة السكريبتات', error: _error!, retry: () => _load());
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(padding: const EdgeInsets.all(13), children: [
-        _SmHeader(title: 'System Scripts', subtitle: '/system/script/print', count: _scripts.length, refresh: _load),
+        _SmHeader(title: 'System Scripts', subtitle: '/system/script/print', count: _scripts.length, refresh: () => _load()),
         const SizedBox(height: 8),
         const Text('Run-count يعكس عدد مرات التشغيل المتزامنة التي يبلغ عنها RouterOS، وليس سجلًا تراكميًا مضمونًا.', style: TextStyle(color: _smMuted, fontSize: 10)),
         if (_error != null) Text(_error!, style: const TextStyle(color: _smRed)),
