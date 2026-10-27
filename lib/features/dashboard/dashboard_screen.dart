@@ -8,6 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 import '../hotspot/hotspot_screen.dart';
+import '../network/network_tools_screen.dart';
+import '../pppoe/pppoe_screen.dart';
+import '../queues/queues_screen.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -263,7 +266,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ? _buildHome()
           : _section == _DashboardSection.hotspot
               ? const HotspotScreen()
-              : _RouterRecordsPanel(key: ValueKey<_DashboardSection>(_section), client: client, section: _section),
+              : _section == _DashboardSection.pppoe
+                  ? const PppoeScreen()
+                  : _section == _DashboardSection.queues
+                      ? const QueuesScreen()
+                      : const NetworkToolsScreen(),
     );
   }
 
