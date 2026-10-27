@@ -158,8 +158,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
     if (value == null) return;
     await _mutateTree(queue, () async {
       await widget.client.command('/queue/tree/set', args: <String, String>{
-        '.id': queue.id,
-        'max-limit': value,
+        '.id': queue.id, 'max-limit': value,
       });
     }, 'تم تحديث max-limit للطابور ' + queue.name);
   }
@@ -168,8 +167,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
     if (queue.id.isEmpty) return;
     await _mutateTree(queue, () async {
       await widget.client.command('/queue/tree/set', args: <String, String>{
-        '.id': queue.id,
-        'disabled': queue.disabled ? 'no' : 'yes',
+        '.id': queue.id, 'disabled': queue.disabled ? 'no' : 'yes',
       });
     }, queue.disabled ? 'تم تفعيل طابور الشجرة' : 'تم تعطيل طابور الشجرة');
   }
@@ -317,17 +315,12 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
         child: Column(children: [
           Container(
             margin: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-            decoration: BoxDecoration(
-              color: _qPanel,
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: Colors.white.withOpacity(0.06)),
-            ),
+            decoration: BoxDecoration(color: _qPanel, borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: Colors.white.withOpacity(0.06))),
             child: const TabBar(
               indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: Color(0xFF292647),
-                borderRadius: BorderRadius.all(Radius.circular(11)),
-              ),
+              indicator: BoxDecoration(color: Color(0xFF292647),
+                borderRadius: BorderRadius.all(Radius.circular(11))),
               labelColor: Colors.white,
               unselectedLabelColor: _qMuted,
               tabs: [
@@ -475,11 +468,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
       return const Center(child: CircularProgressIndicator(color: _qAccent));
     }
     if (_treeError != null && _treeQueues.isEmpty) {
-      return _QueueMessage(
-        title: 'تعذر تحميل Queue Tree',
-        message: _treeError!,
-        onRetry: () => _loadTree(),
-      );
+      return _QueueMessage(title: 'تعذر تحميل Queue Tree', message: _treeError!, onRetry: () => _loadTree());
     }
     final enabled = _treeQueues.where((item) => !item.disabled).length;
     final marked = _treeQueues.where((item) => item.packetMark.isNotEmpty && item.packetMark != 'none').length;
@@ -525,52 +514,33 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
             Text('تعذّر تحديث آخر قراءة: ' + _treeError!, style: const TextStyle(color: _qRed, fontSize: 11)),
           ],
           const SizedBox(height: 8),
-          const Text(
-            'تعرض هذه القائمة القواعد الموجودة على الراوتر فقط؛ لا تنشئ علامات Mangle أو أنواع PCQ تلقائيًا.',
-            style: TextStyle(color: _qMuted, fontSize: 10, height: 1.4),
-          ),
+          const Text('تعرض القائمة القواعد الموجودة فعلًا؛ لا تُنشئ علامات Mangle أو أنواع PCQ تلقائيًا.',
+            style: TextStyle(color: _qMuted, fontSize: 10, height: 1.4)),
           const SizedBox(height: 12),
           if (_treeQueues.isEmpty)
-            const _QueueMessage(
-              title: 'لا توجد Queue Tree',
-              message: 'أضف Queue Tree واربط packet-mark من Mangle، واختر نوع PCQ من إعدادات queue عند الحاجة.',
-            )
+            const _QueueMessage(title: 'لا توجد Queue Tree',
+              message: 'أضف Queue Tree واربط packet-mark من Mangle واختر نوع PCQ عند الحاجة.')
           else
             ..._treeQueues.map((queue) => Container(
               margin: const EdgeInsets.only(bottom: 9),
               padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                color: _qPanel,
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: queue.disabled ? Colors.white.withOpacity(0.05) : _qAccent.withOpacity(0.2)),
-              ),
+              decoration: BoxDecoration(color: _qPanel, borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: queue.disabled ? Colors.white.withOpacity(0.05) : _qAccent.withOpacity(0.2))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  Container(
-                    width: 37,
-                    height: 37,
-                    decoration: BoxDecoration(
-                      color: (queue.disabled ? _qMuted : _qAccent).withOpacity(0.13),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Icon(queue.disabled ? Icons.pause_circle_outline_rounded : Icons.account_tree_rounded,
-                      color: queue.disabled ? _qMuted : _qAccent),
-                  ),
+                  Icon(queue.disabled ? Icons.pause_circle_outline_rounded : Icons.account_tree_rounded,
+                    color: queue.disabled ? _qMuted : _qAccent, size: 24),
                   const SizedBox(width: 9),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(queue.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 3),
                     Text('Parent: ' + (queue.parent.isEmpty ? '—' : queue.parent),
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: _qMuted, fontSize: 10)),
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _qMuted, fontSize: 10)),
                   ])),
-                  if (queue.disabled)
-                    const Text('معطّل', style: TextStyle(color: _qMuted, fontSize: 10))
-                  else
-                    const Text('نشط', style: TextStyle(color: _qGreen, fontSize: 10, fontWeight: FontWeight.w800)),
+                  Text(queue.disabled ? 'معطّل' : 'نشط',
+                    style: TextStyle(color: queue.disabled ? _qMuted : _qGreen, fontSize: 10, fontWeight: FontWeight.w800)),
                 ]),
-                const SizedBox(height: 12),
+                const SizedBox(height: 11),
                 Row(children: [
                   Expanded(child: _QueueRate(label: 'السرعة اللحظية', value: _rateLabel(queue.rateBps), color: _qBlue)),
                   const SizedBox(width: 8),
@@ -582,17 +552,13 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
                 _QueueDetailLine(label: 'Max limit', value: queue.maxLimit.isEmpty ? 'غير محدد' : queue.maxLimit),
                 if (queue.limitAt.isNotEmpty && queue.limitAt != '0') _QueueDetailLine(label: 'Limit at', value: queue.limitAt),
                 if (queue.priority.isNotEmpty) _QueueDetailLine(label: 'Priority', value: queue.priority),
-                if (queue.packets > 0)
-                  Text('Packets: ' + queue.packets.toString(), style: const TextStyle(color: _qMuted, fontSize: 9)),
-                if (queue.comment.isNotEmpty)
-                  Text(queue.comment, style: const TextStyle(color: _qMuted, fontSize: 10)),
+                if (queue.packets > 0) Text('Packets: ' + queue.packets.toString(), style: const TextStyle(color: _qMuted, fontSize: 9)),
+                if (queue.comment.isNotEmpty) Text(queue.comment, style: const TextStyle(color: _qMuted, fontSize: 10)),
                 const Divider(height: 20, color: Color(0xFF283142)),
                 Row(children: [
                   Expanded(child: OutlinedButton.icon(
                     onPressed: _treeBusy.contains(queue.id) ? null : () => _editTreeQueue(queue),
-                    icon: const Icon(Icons.tune_rounded, size: 16),
-                    label: const Text('تعديل max-limit'),
-                  )),
+                    icon: const Icon(Icons.tune_rounded, size: 16), label: const Text('تعديل max-limit'))),
                   const SizedBox(width: 8),
                   Expanded(child: FilledButton.tonalIcon(
                     onPressed: _treeBusy.contains(queue.id) ? null : () => _toggleTreeQueue(queue),
@@ -600,8 +566,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
                       ? const SizedBox(width: 13, height: 13, child: CircularProgressIndicator(strokeWidth: 2))
                       : Icon(queue.disabled ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 16),
                     label: Text(queue.disabled ? 'تفعيل' : 'تعطيل'),
-                    style: FilledButton.styleFrom(foregroundColor: queue.disabled ? _qGreen : _qRed),
-                  )),
+                    style: FilledButton.styleFrom(foregroundColor: queue.disabled ? _qGreen : _qRed))),
                 ]),
               ]),
             )),
@@ -662,148 +627,7 @@ class _TreeQueue {
   double get rateBps {
     final numeric = double.tryParse(rate.trim());
     if (numeric != null) return numeric;
-    final match = RegExp(r'^\\s*(\\d+(?:\\.\\d+)?)\\s*([kKmMgGtT]?)\\s*(?:bps|bit/s)?\\s*
-    required this.id,
-    required this.name,
-    required this.target,
-    required this.maxLimit,
-    required this.rate,
-    required this.disabled,
-    required this.bytes,
-    required this.packets,
-    required this.comment,
-  });
-
-  final String id;
-  final String name;
-  final String target;
-  final String maxLimit;
-  final String rate;
-  final bool disabled;
-  final int bytes;
-  final int packets;
-  final String comment;
-
-  // RouterOS Simple Queue `rate` is bytes/second; max-limit is bits/second.
-  double get rateUp => _pair(rate, 0) * 8;
-  double get rateDown => _pair(rate, 1) * 8;
-  bool get atLimit {
-    if (disabled) return false;
-    final upMax = _pair(maxLimit, 0);
-    final downMax = _pair(maxLimit, 1);
-    final currentUp = rateUp;
-    final currentDown = rateDown;
-    return (upMax > 0 && currentUp >= upMax * 0.97) || (downMax > 0 && currentDown >= downMax * 0.97);
-  }
-
-  factory _SimpleQueue.fromMap(Map<String, String> row) => _SimpleQueue(
-        id: row['.id'] ?? '',
-        name: row['name'] ?? 'Queue',
-        target: row['target'] ?? '',
-        maxLimit: row['max-limit'] ?? '',
-        rate: row['rate'] ?? '',
-        disabled: row['disabled'] == 'true',
-        bytes: _integerPairSum(row['bytes'] ?? ''),
-        packets: _integerPairSum(row['packets'] ?? ''),
-        comment: row['comment'] ?? '',
-      );
-}
-
-double _pair(String value, int index) {
-  final parts = value.split('/');
-  if (parts.length <= index) return 0;
-  final match = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*([kKmMgGtT]?)\s*$').firstMatch(parts[index]);
-  if (match == null) return 0;
-  final number = double.tryParse(match.group(1) ?? '') ?? 0;
-  final unit = (match.group(2) ?? '').toLowerCase();
-  final multiplier = unit == 'k' ? 1000.0 : unit == 'm' ? 1000000.0 : unit == 'g' ? 1000000000.0 : unit == 't' ? 1000000000000.0 : 1.0;
-  return number * multiplier;
-}
-
-int _integerPairSum(String value) => value.split('/').fold<int>(0, (sum, part) => sum + (int.tryParse(part) ?? 0));
-
-String _rateLabel(double bitsPerSecond) {
-  if (bitsPerSecond >= 1000000000) return (bitsPerSecond / 1000000000).toStringAsFixed(2) + ' Gbps';
-  if (bitsPerSecond >= 1000000) return (bitsPerSecond / 1000000).toStringAsFixed(2) + ' Mbps';
-  if (bitsPerSecond >= 1000) return (bitsPerSecond / 1000).toStringAsFixed(1) + ' Kbps';
-  return bitsPerSecond.toStringAsFixed(0) + ' bps';
-}
-
-String _bytesLabel(int bytes) {
-  if (bytes >= 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toStringAsFixed(1) + ' GB';
-  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toStringAsFixed(1) + ' MB';
-  if (bytes >= 1024) return (bytes / 1024).toStringAsFixed(1) + ' KB';
-  return bytes.toString() + ' B';
-}
-
-bool _validLimit(String value) => RegExp(r'^\s*\d+(?:[kKmMgGtT]?)\s*\/\s*\d+(?:[kKmMgGtT]?)\s*$').hasMatch(value);
-
-class _QueueRate extends StatelessWidget {
-  const _QueueRate({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: const Color(0xFF0B1019), borderRadius: BorderRadius.circular(11)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(color: _qMuted, fontSize: 9)),
-          const SizedBox(height: 4),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 12)),
-        ]),
-      );
-}
-
-class _QueueStat extends StatelessWidget {
-  const _QueueStat({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: _qPanel, borderRadius: BorderRadius.circular(13)),
-        child: Row(children: [
-          Expanded(child: Text(label, style: const TextStyle(color: _qMuted, fontSize: 10))),
-          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900)),
-        ]),
-      );
-}
-
-class _QueueMessage extends StatelessWidget {
-  const _QueueMessage({required this.title, required this.message, this.onRetry});
-  final String title;
-  final String message;
-  final VoidCallback? onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.speed_rounded, color: _qAccent, size: 38),
-            const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 7),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: _qMuted, fontSize: 12, height: 1.5)),
-            if (onRetry != null) ...[
-              const SizedBox(height: 12),
-              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('إعادة المحاولة')),
-            ],
-          ]),
-        ),
-      );
-}
-
-String _friendly(Object error) {
-  if (error is TimeoutException) return 'انتهت مهلة الاتصال بالراوتر.';
-  if (error is RouterOsException) return error.message;
-  return error.toString().replaceFirst('Exception: ', '');
-}
-,
+    final match = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*([kKmMgGtT]?)\s*(?:bps|bit/s)?\s*$',
       caseSensitive: false).firstMatch(rate);
     if (match == null) return 0;
     final number = double.tryParse(match.group(1) ?? '') ?? 0;
@@ -830,148 +654,7 @@ String _friendly(Object error) {
 }
 
 bool _validTreeLimit(String value) =>
-    RegExp(r'^\\s*\\d+(?:\\.\\d+)?\\s*[kKmMgGtT]?\\s*
-    required this.id,
-    required this.name,
-    required this.target,
-    required this.maxLimit,
-    required this.rate,
-    required this.disabled,
-    required this.bytes,
-    required this.packets,
-    required this.comment,
-  });
-
-  final String id;
-  final String name;
-  final String target;
-  final String maxLimit;
-  final String rate;
-  final bool disabled;
-  final int bytes;
-  final int packets;
-  final String comment;
-
-  // RouterOS Simple Queue `rate` is bytes/second; max-limit is bits/second.
-  double get rateUp => _pair(rate, 0) * 8;
-  double get rateDown => _pair(rate, 1) * 8;
-  bool get atLimit {
-    if (disabled) return false;
-    final upMax = _pair(maxLimit, 0);
-    final downMax = _pair(maxLimit, 1);
-    final currentUp = rateUp;
-    final currentDown = rateDown;
-    return (upMax > 0 && currentUp >= upMax * 0.97) || (downMax > 0 && currentDown >= downMax * 0.97);
-  }
-
-  factory _SimpleQueue.fromMap(Map<String, String> row) => _SimpleQueue(
-        id: row['.id'] ?? '',
-        name: row['name'] ?? 'Queue',
-        target: row['target'] ?? '',
-        maxLimit: row['max-limit'] ?? '',
-        rate: row['rate'] ?? '',
-        disabled: row['disabled'] == 'true',
-        bytes: _integerPairSum(row['bytes'] ?? ''),
-        packets: _integerPairSum(row['packets'] ?? ''),
-        comment: row['comment'] ?? '',
-      );
-}
-
-double _pair(String value, int index) {
-  final parts = value.split('/');
-  if (parts.length <= index) return 0;
-  final match = RegExp(r'^\s*(\d+(?:\.\d+)?)\s*([kKmMgGtT]?)\s*$').firstMatch(parts[index]);
-  if (match == null) return 0;
-  final number = double.tryParse(match.group(1) ?? '') ?? 0;
-  final unit = (match.group(2) ?? '').toLowerCase();
-  final multiplier = unit == 'k' ? 1000.0 : unit == 'm' ? 1000000.0 : unit == 'g' ? 1000000000.0 : unit == 't' ? 1000000000000.0 : 1.0;
-  return number * multiplier;
-}
-
-int _integerPairSum(String value) => value.split('/').fold<int>(0, (sum, part) => sum + (int.tryParse(part) ?? 0));
-
-String _rateLabel(double bitsPerSecond) {
-  if (bitsPerSecond >= 1000000000) return (bitsPerSecond / 1000000000).toStringAsFixed(2) + ' Gbps';
-  if (bitsPerSecond >= 1000000) return (bitsPerSecond / 1000000).toStringAsFixed(2) + ' Mbps';
-  if (bitsPerSecond >= 1000) return (bitsPerSecond / 1000).toStringAsFixed(1) + ' Kbps';
-  return bitsPerSecond.toStringAsFixed(0) + ' bps';
-}
-
-String _bytesLabel(int bytes) {
-  if (bytes >= 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toStringAsFixed(1) + ' GB';
-  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toStringAsFixed(1) + ' MB';
-  if (bytes >= 1024) return (bytes / 1024).toStringAsFixed(1) + ' KB';
-  return bytes.toString() + ' B';
-}
-
-bool _validLimit(String value) => RegExp(r'^\s*\d+(?:[kKmMgGtT]?)\s*\/\s*\d+(?:[kKmMgGtT]?)\s*$').hasMatch(value);
-
-class _QueueRate extends StatelessWidget {
-  const _QueueRate({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: const Color(0xFF0B1019), borderRadius: BorderRadius.circular(11)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(color: _qMuted, fontSize: 9)),
-          const SizedBox(height: 4),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 12)),
-        ]),
-      );
-}
-
-class _QueueStat extends StatelessWidget {
-  const _QueueStat({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: _qPanel, borderRadius: BorderRadius.circular(13)),
-        child: Row(children: [
-          Expanded(child: Text(label, style: const TextStyle(color: _qMuted, fontSize: 10))),
-          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900)),
-        ]),
-      );
-}
-
-class _QueueMessage extends StatelessWidget {
-  const _QueueMessage({required this.title, required this.message, this.onRetry});
-  final String title;
-  final String message;
-  final VoidCallback? onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.speed_rounded, color: _qAccent, size: 38),
-            const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 7),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: _qMuted, fontSize: 12, height: 1.5)),
-            if (onRetry != null) ...[
-              const SizedBox(height: 12),
-              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('إعادة المحاولة')),
-            ],
-          ]),
-        ),
-      );
-}
-
-String _friendly(Object error) {
-  if (error is TimeoutException) return 'انتهت مهلة الاتصال بالراوتر.';
-  if (error is RouterOsException) return error.message;
-  return error.toString().replaceFirst('Exception: ', '');
-}
-).hasMatch(value);
+    RegExp(r'^\s*\d+(?:\.\d+)?\s*[kKmMgGtT]?\s*$').hasMatch(value);
 
 class _SimpleQueue {
   const _SimpleQueue({
