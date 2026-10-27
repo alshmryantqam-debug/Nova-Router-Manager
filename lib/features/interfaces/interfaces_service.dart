@@ -86,7 +86,7 @@ class InterfacesService {
     await _client.command('/interface/bridge/port/set', args: <String, String>{
       '.id': portId,
       'bridge': bridgeName.trim(),
-      'horizon': (horizon ?? '').trim(),
+      'horizon': (horizon == null || horizon.trim().isEmpty) ? 'none' : horizon.trim(),
     });
   }
 
