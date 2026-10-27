@@ -480,7 +480,7 @@ class _RouterCard extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Text(
-              'API ${router.useSsl ? "SSL" : "TCP"}  ·  المستخدم: ${router.username}',
+              '${router.useRestApi ? (router.useSsl ? "REST HTTPS" : "REST HTTP") : (router.useSsl ? "API SSL" : "API TCP")}  ·  المستخدم: ${router.username}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: _muted, fontSize: 10),
@@ -528,6 +528,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
   late final String _id;
 
   bool _ssl = false;
+  bool _restApi = false;
   bool _allowBadCert = false;
   bool _testing = false;
   bool _saving = false;
@@ -546,6 +547,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
     _username = TextEditingController(text: router?.username ?? 'admin');
     _password = TextEditingController(text: router?.password ?? '');
     _ssl = router?.useSsl ?? false;
+    _restApi = router?.useRestApi ?? false;
     for (final controller in [_name, _host, _port, _username, _password]) {
       controller.addListener(_invalidateTest);
     }
@@ -577,6 +579,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
         _username.text.trim(),
         _password.text,
         _ssl.toString(),
+        _restApi.toString(),
         _allowBadCert.toString(),
       ].join(String.fromCharCode(31));
 
@@ -588,6 +591,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
         username: _username.text.trim(),
         password: _password.text,
         useSsl: _ssl,
+        useRestApi: _restApi,
       );
 
   String? _required(String? value, String label) =>
@@ -617,6 +621,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
         username: _username.text.trim(),
         password: _password.text,
         useSsl: _ssl,
+        useRestApi: _restApi,
         autoReconnect: false,
         onBadCertificate: _allowBadCert ? (certificate, host, port) => true : null,
       );
@@ -720,7 +725,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
                   Expanded(
                     flex: 5,
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      const _FieldLabel(label: 'منفذ API', icon: Icons.settings_ethernet_rounded),
+                      _FieldLabel(label: _restApi ? 'منفذ REST API' : 'منفذ API', icon: Icons.settings_ethernet_rounded),
                       TextFormField(
                         controller: _port,
                         textDirection: TextDirection.ltr,
@@ -743,12 +748,16 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
                         child: SwitchListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                           dense: true,
-                          title: const Text('API-SSL', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          title: Text(_restApi ? 'HTTPS' : 'API-SSL', style: const TextStyle(color: Colors.white, fontSize: 12)),
                           value: _ssl,
                           activeColor: _accent,
                           onChanged: (value) {
-                            if (value && _port.text.trim() == '8728') _port.text = '8729';
-                            if (!value && _port.text.trim() == '8729') _port.text = '8728';
+                            if (_restApi) {
+                              _port.text = value ? '443' : '80';
+                            } else {
+                              if (value && _port.text.trim() == '8728') _port.text = '8729';
+                              if (!value && _port.text.trim() == '8729') _port.text = '8728';
+                            }
                             setState(() {
                               _ssl = value;
                               _testedFingerprint = null;
@@ -761,6 +770,28 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
                     ]),
                   ),
                 ]),
+                const SizedBox(height: 9),
+                Container(
+                  decoration: BoxDecoration(color: const Color(0xFF0B1019), borderRadius: BorderRadius.circular(13), border: Border.all(color: Colors.white.withOpacity(0.055))),
+                  child: CheckboxListTile(
+                    value: _restApi,
+                    onChanged: _testing || _saving ? null : (value) {
+                      final enabled = value ?? false;
+                      setState(() {
+                        _restApi = enabled;
+                        _port.text = enabled ? (_ssl ? '443' : '80') : (_ssl ? '8729' : '8728');
+                        _testedFingerprint = null;
+                        _testSummary = null;
+                        _error = null;
+                      });
+                    },
+                    activeColor: _accent,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                    title: const Text('استخدام REST API (RouterOS v7)', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    subtitle: const Text('HTTP 80 أو HTTPS 443 بدل منفذ API 8728/8729', style: TextStyle(color: _muted, fontSize: 10)),
+                  ),
+                ),
                 const SizedBox(height: 14),
                 const _FieldLabel(label: 'اسم المستخدم', icon: Icons.person_outline_rounded),
                 TextFormField(
