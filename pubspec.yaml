@@ -21,6 +21,7 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.4
   http: ^1.2.2
+  crypto: ^3.0.6
   intl: ^0.20.3
 
 dev_dependencies:
