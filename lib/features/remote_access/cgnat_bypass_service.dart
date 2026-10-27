@@ -279,14 +279,13 @@ class CgnatBypassService {
 
   String _watchdogScript(String type, String name) {
     final path = _vpnPath(type);
-    final safeName = name.replaceAll('"', r'\"');
-    return ':local t [$path find where name="$safeName"]; '
-        ':if ([:len $t] > 0) do={ '
-        ':if ([$path get $t running] = false) do={ '
-        '$path disable $t; :delay 2s; $path enable $t; '
-        '} }'.replaceAll('$path', path);
+    final safeName = name.replaceAll('"', r'\\"');
+    return ':local t [' + path + ' find where name="' + safeName + '"]; '
+        ':if ([:len \\$t] > 0) do={ '
+        ':if ([' + path + ' get \\$t running] = false) do={ '
+        + path + ' disable \\$t; :delay 2s; ' + path + ' enable \\$t; '
+        '} }';
   }
-
   String _vpnPath(String type) {
     switch (type.toUpperCase()) {
       case 'L2TP': return '/interface/l2tp-client';
