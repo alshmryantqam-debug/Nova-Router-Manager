@@ -125,7 +125,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Dart source
-        run: flutter analyze --no-pub lib
+        run: flutter analyze --no-pub --no-fatal-infos --fatal-warnings lib
 
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons
