@@ -363,8 +363,9 @@ class _SimpleQueue {
   final int packets;
   final String comment;
 
-  double get rateUp => _pair(rate, 0);
-  double get rateDown => _pair(rate, 1);
+  // RouterOS Simple Queue `rate` is bytes/second; max-limit is bits/second.
+  double get rateUp => _pair(rate, 0) * 8;
+  double get rateDown => _pair(rate, 1) * 8;
   bool get atLimit {
     if (disabled) return false;
     final upMax = _pair(maxLimit, 0);
