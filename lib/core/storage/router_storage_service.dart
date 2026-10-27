@@ -17,6 +17,7 @@ class SavedRouter {
     required this.username,
     required this.password,
     required this.useSsl,
+    this.useRestApi = false,
   });
 
   final String id;
@@ -26,6 +27,7 @@ class SavedRouter {
   final String username;
   final String password;
   final bool useSsl;
+  final bool useRestApi;
 
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,
@@ -35,6 +37,7 @@ class SavedRouter {
         'username': username,
         'password': password,
         'useSsl': useSsl,
+        'useRestApi': useRestApi,
       };
 
   factory SavedRouter.fromJson(Map<String, dynamic> json) {
@@ -49,11 +52,12 @@ class SavedRouter {
     final rawPort = json['port'];
     final parsedPort = rawPort is int ? rawPort : int.tryParse('$rawPort');
     final rawSsl = json['useSsl'];
+    final rawRest = json['useRestApi'] ?? false;
 
     if (parsedPort == null || parsedPort < 1 || parsedPort > 65535) {
       throw const FormatException('Saved router port is invalid.');
     }
-    if (rawSsl is! bool) {
+    if (rawSsl is! bool || rawRest is! bool) {
       throw const FormatException('Saved router SSL setting is invalid.');
     }
 
@@ -65,6 +69,7 @@ class SavedRouter {
       username: requiredString('username'),
       password: requiredString('password'),
       useSsl: rawSsl,
+      useRestApi: rawRest,
     );
   }
 
@@ -76,6 +81,7 @@ class SavedRouter {
     String? username,
     String? password,
     bool? useSsl,
+    bool? useRestApi,
   }) {
     return SavedRouter(
       id: id ?? this.id,
@@ -85,6 +91,7 @@ class SavedRouter {
       username: username ?? this.username,
       password: password ?? this.password,
       useSsl: useSsl ?? this.useSsl,
+      useRestApi: useRestApi ?? this.useRestApi,
     );
   }
 
@@ -98,11 +105,12 @@ class SavedRouter {
           other.port == port &&
           other.username == username &&
           other.password == password &&
-          other.useSsl == useSsl;
+          other.useSsl == useSsl &&
+          other.useRestApi == useRestApi;
 
   @override
   int get hashCode =>
-      Object.hash(id, name, host, port, username, password, useSsl);
+      Object.hash(id, name, host, port, username, password, useSsl, useRestApi);
 }
 
 /// Encrypted persistence for saved router profiles.
