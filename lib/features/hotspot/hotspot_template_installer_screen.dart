@@ -41,6 +41,7 @@ class _HotspotTemplateInstallerScreenState extends ConsumerState<HotspotTemplate
     setState(()=>_busy=true);
     try {
       final html = _generate();
+      if (mounted) setState(() => _html = html);
       final rows = await client.command('/file/print', args: const {'.proplist':'.id,name'});
       final target = rows.where((r)=>(r['name']??'').replaceAll('\\','/')=='hotspot/login.html');
       if (target.isNotEmpty && (target.first['.id']??'').isNotEmpty) {
