@@ -97,7 +97,7 @@ class _RawQosWizardScreenState extends ConsumerState<RawQosWizardScreen> {
     final up=int.tryParse(_upload.text.trim()),down=int.tryParse(_download.text.trim());
     if(up==null||down==null||up<1||down<1||up>10000||down>10000){_toast('أدخل سرعات رفع وتنزيل من 1 إلى 10000 Mbps.',bad:true);return;}
     if(_hasTag(_mangle,'NOVA:QOS:')||_hasTag(_trees,'NOVA:QOS:')){_toast('قواعد QoS موجودة مسبقاً. احذف قواعد NOVA:QOS أولاً لتجنب الازدواج.',bad:true);return;}
-    if(!await _confirm('تفعيل أولوية Ping وDNS؟','ستُنشأ علامات حزم وقوائم PCQ بحدود رفع '+up+'M وتنزيل '+down+'M. أدخل السرعات الفعلية للخطوط؛ تشكيل غير مناسب قد يقلل الأداء. الأولوية تكون فعالة عند ازدحام الطوابير فقط.'))return;
+    if(!await _confirm('تفعيل أولوية Ping وDNS؟','ستُنشأ علامات حزم وقوائم PCQ بحدود رفع '+up.toString()+'M وتنزيل '+down.toString()+'M. أدخل السرعات الفعلية للخطوط؛ تشكيل غير مناسب قد يقلل الأداء. الأولوية تكون فعالة عند ازدحام الطوابير فقط.'))return;
     setState(()=>_busy=true);
     try{
       await _add('/queue/type/add',{'name':'NOVA-PCQ-UP','kind':'pcq','pcq-classifier':'src-address','comment':'NOVA:QOS:TYPE:UP'});
