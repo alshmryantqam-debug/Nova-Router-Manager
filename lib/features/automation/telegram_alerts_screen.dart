@@ -91,7 +91,7 @@ class _TelegramAlertsScreenState extends ConsumerState<TelegramAlertsScreen> {
     if(_towerAlerts&&towers.isEmpty){_toast('أدخل IP أو أسماء الأجهزة الرئيسية لمراقبتها.',bad:true);return;}
     if((_wanAlerts&&!_validHosts(_wanHosts.text))||(_towerAlerts&&!_validHosts(_towerHosts.text))){_toast('أحد العناوين يحتوي أحرفاً غير مسموحة.',bad:true);return;}
     if(!_wanAlerts&&!_towerAlerts&&!_securityAlerts){_toast('اختر نوع تنبيه واحداً على الأقل.',bad:true);return;}
-    if(!await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:_panel,title:const Text('تفعيل تنبيهات الراوتر؟'),content:const Text('سيحفظ الراوتر Bot Token داخل Script، وينشئ Scheduler وNetwatch. قيّد صلاحيات الوصول إلى System Scripts؛ لا تشارك هذا الرمز.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('تفعيل'))]))??false)return;
+    if (!(await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:_panel,title:const Text('تفعيل تنبيهات الراوتر؟'),content:const Text('سيحفظ الراوتر Bot Token داخل Script، وينشئ Scheduler وNetwatch. قيّد صلاحيات الوصول إلى System Scripts؛ لا تشارك هذا الرمز.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('تفعيل'))])) ?? false)) return;
     setState(()=>_busy=true);
     try{
       await _upsertScript('NOVA-Telegram-Send',_senderSource(token,chat),'NOVA:TELEGRAM:SENDER');
