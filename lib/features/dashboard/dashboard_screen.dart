@@ -28,6 +28,7 @@ import '../settings/app_security_service.dart';
 import '../remote_access/wireguard_tunnel_screen.dart';
 import '../remote_access/cgnat_bypass_screen.dart';
 import '../remote_access/external_security_portfwd_screen.dart';
+import '../wireless_towers/wireless_towers_screen.dart';
 import '../firewall_advanced/nat_address_list_screen.dart';
 import '../firewall_advanced/pcc_wizard_screen.dart';
 
@@ -39,7 +40,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -322,7 +323,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                   ? const CgnatBypassScreen()
                                                                                   : _section == _DashboardSection.externalSecurity
                                                                                       ? const ExternalSecurityPortfwdScreen()
-                                                                                      : const NetworkToolsScreen(),
+                                                                                      : _section == _DashboardSection.wirelessTowers
+                                                                                          ? const WirelessTowersScreen()
+                                                                                          : const NetworkToolsScreen(),
     );
   }
 
@@ -370,6 +373,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.remoteAccess, Icons.vpn_lock_rounded, 'الوصول الخارجي والأنفاق'),
             _drawerItem(_DashboardSection.cgnatBypass, Icons.public_rounded, 'تجاوز CGNAT • ZeroTier / VPN'),
             _drawerItem(_DashboardSection.externalSecurity, Icons.admin_panel_settings_rounded, 'الأمان الخارجي وتحويل المنافذ'),
+            _drawerItem(_DashboardSection.wirelessTowers, Icons.cell_tower_rounded, 'الصحون والأبراج اللاسلكية'),
             const Spacer(),
             const Divider(color: Color(0xFF283142), height: 1),
             ListTile(
@@ -421,6 +425,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.remoteAccess: return 'الوصول الخارجي والأنفاق';
       case _DashboardSection.cgnatBypass: return 'تجاوز CGNAT • ZeroTier / VPN';
       case _DashboardSection.externalSecurity: return 'الأمان الخارجي وتحويل المنافذ';
+      case _DashboardSection.wirelessTowers: return 'الصحون والأبراج اللاسلكية';
     }
   }
 
