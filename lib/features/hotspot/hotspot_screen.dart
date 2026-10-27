@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/network/routeros_client.dart';
+import '../../core/providers/router_providers.dart';
 import 'hotspot_service.dart';
 import 'voucher_pdf_service.dart';
 
@@ -15,36 +18,14 @@ const Color _hsGreen = Color(0xFF43D9A3);
 const Color _hsRed = Color(0xFFFF657A);
 const Color _hsBlue = Color(0xFF67B7FF);
 
-class HotspotScreen extends StatelessWidget {
+class HotspotScreen extends ConsumerWidget {
   const HotspotScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const _HotspotWorkspace();
-  }
-}
-
-class _HotspotWorkspace extends StatefulWidget {
-  const _HotspotWorkspace();
-
-  @override
-  State<_HotspotWorkspace> createState() => _HotspotWorkspaceState();
-}
-
-class _HotspotWorkspaceState extends State<_HotspotWorkspace> {
-  late final RouterOsClient? _client;
-  late final HotspotService? _service;
-
-  @override
-  void initState() {
-    super.initState();
-    _client = null;
-    _service = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const _HotspotNeedsRouter();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final client = ref.watch(activeRouterClientProvider);
+    if (client == null) return const _HotspotNeedsRouter();
+    return HotspotWorkspaceConnected(client: client);
   }
 }
 
