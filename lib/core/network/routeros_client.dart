@@ -19,6 +19,7 @@ class RouterOsClient {
     this.port = 8728,
     this.useSsl = false,
     this.useRestApi = false,
+    this.knockPorts = '',
     this.connectionTimeout = const Duration(seconds: 8),
     this.requestTimeout = const Duration(seconds: 20),
     this.reconnectInterval = const Duration(seconds: 5),
@@ -52,6 +53,8 @@ class RouterOsClient {
   final int port;
   final bool useSsl;
   final bool useRestApi;
+  /// Optional comma-separated TCP knock ports sent before connecting.
+  final String knockPorts;
   final Duration connectionTimeout;
   final Duration requestTimeout;
   final Duration reconnectInterval;
@@ -98,6 +101,7 @@ class RouterOsClient {
 
   Future<void> _connectInternal() async {
     await _closeSocketOnly();
+    await _performPortKnock();
     if (useRestApi) {
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 5)
@@ -175,6 +179,30 @@ class RouterOsClient {
         );
       }
       rethrow;
+    }
+  }
+
+  Future<void> _performPortKnock() async {
+    final raw = knockPorts.trim();
+    if (raw.isEmpty) return;
+    final ports = raw.split(',').map((part) => int.tryParse(part.trim())).toList();
+    if (ports.isEmpty || ports.any((port) => port == null || port < 1 || port > 65535)) {
+      throw const RouterOsException('إعداد Port Knocking غير صالح. أدخل منافذ TCP مفصولة بفواصل.');
+    }
+    for (final port in ports.cast<int>()) {
+      Socket? knock;
+      try {
+        // A TCP SYN is the knock; refusal is expected when no listener exists.
+        knock = await Socket.connect(host, port, timeout: const Duration(seconds: 2));
+        await knock.flush();
+      } on SocketException {
+        // A reset still confirms that the SYN reached the target.
+      } on TimeoutException {
+        // A silent firewall may intentionally drop the knock.
+      } finally {
+        knock?.destroy();
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 350));
     }
   }
 
