@@ -14,6 +14,7 @@ import '../network/network_tools_screen.dart';
 import '../pppoe/pppoe_screen.dart';
 import '../queues/queues_screen.dart';
 import '../neighbors/neighbors_connections_screen.dart';
+import '../interfaces/interfaces_screen.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -23,7 +24,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -279,7 +280,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               ? const DhcpBindingScreen()
                               : _section == _DashboardSection.system
                                   ? const SystemManagerScreen()
-                                  : const NetworkToolsScreen(),
+                                  : _section == _DashboardSection.interfaces
+                                      ? const InterfacesScreen()
+                                      : const NetworkToolsScreen(),
     );
   }
 
@@ -314,6 +317,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.firewall, Icons.security_rounded, 'الشبكة والفايروول'),
             _drawerItem(_DashboardSection.dhcpBinding, Icons.devices_other_rounded, 'DHCP و IP Binding'),
             _drawerItem(_DashboardSection.system, Icons.settings_suggest_rounded, 'أدوات النظام والصيانة'),
+            _drawerItem(_DashboardSection.interfaces, Icons.settings_ethernet_rounded, 'المنافذ والفايبر و VLAN'),
             const Spacer(),
             const Divider(color: Color(0xFF283142), height: 1),
             ListTile(
@@ -352,6 +356,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.firewall: return 'الشبكة والفايروول';
       case _DashboardSection.dhcpBinding: return 'DHCP و IP Binding';
       case _DashboardSection.system: return 'أدوات النظام والصيانة';
+      case _DashboardSection.interfaces: return 'المنافذ والفايبر و VLAN';
     }
   }
 
