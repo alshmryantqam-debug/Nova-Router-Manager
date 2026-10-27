@@ -176,7 +176,7 @@ class WireguardTunnelService {
     }
     if(prefix!=null) {
       final addresses=await client.command('/ip/address/print');
-      for(final row in addresses.where((r)=>r['interface']==name && (prefix==null || (r['comment'] ?? '').startsWith(prefix)))) {
+      for(final row in addresses.where((r)=>r['interface']==name && (r['comment'] ?? '').startsWith(prefix))) {
         final rowId=row['.id']; if(rowId!=null) await client.command('/ip/address/remove',args:<String,String>{'.id':rowId});
       }
       final rules=await client.command('/ip/firewall/filter/print');
