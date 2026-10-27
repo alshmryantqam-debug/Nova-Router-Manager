@@ -489,6 +489,9 @@ class RouterOsClient {
         pending.fail(error);
         break;
       case '!done':
+        if (pending.authentication && fields['ret'] != null) {
+          pending.rows.add(fields);
+        }
         _pending.remove(tag);
         if (_authPendingTag == tag) _authPendingTag = null;
         pending.complete();
@@ -570,7 +573,6 @@ class RouterOsClient {
         .openUrl(method, uri);
     request.headers.set(HttpHeaders.authorizationHeader, 'Basic $credentials');
     request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-    if (method == 'GET' && args.isNotEmpty) request.url.queryParameters;
     final response = await request.close();
     return http.Response.bytes(await response.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk)), response.statusCode);
   }
