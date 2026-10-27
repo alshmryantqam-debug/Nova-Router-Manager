@@ -96,7 +96,7 @@ class _NeighborsConnectionsWorkspaceState extends State<NeighborsConnectionsWork
       final rows = await widget.client.command(
         '/ip/firewall/connection/print',
         args: const <String, String>{
-          '.proplist': '.id,src-address,dst-address,protocol,bytes,packets,orig-bytes,repl-bytes,orig-packets,repl-packets,src-port,dst-port,tcp-state,timeout,seen-reply,assured,confirmed,connection-mark',
+          '.proplist': '.id,src-address,dst-address,protocol,orig-bytes,repl-bytes,orig-packets,repl-packets,src-port,dst-port,tcp-state,timeout,seen-reply,assured,confirmed,connection-mark',
         },
       );
       final items = rows.map(_FirewallConnection.fromMap)
