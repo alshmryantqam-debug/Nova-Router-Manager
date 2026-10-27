@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart' as crypto;
+import 'package:http/http.dart' as http;
+
 /// A RouterOS API socket client supporting concurrent tagged requests and streams.
 ///
 /// RouterOS API uses TCP/8728 by default and API-SSL on TCP/8729.
@@ -15,6 +18,7 @@ class RouterOsClient {
     required this.password,
     this.port = 8728,
     this.useSsl = false,
+    this.useRestApi = false,
     this.connectionTimeout = const Duration(seconds: 8),
     this.requestTimeout = const Duration(seconds: 20),
     this.reconnectInterval = const Duration(seconds: 5),
@@ -47,6 +51,7 @@ class RouterOsClient {
   final String password;
   final int port;
   final bool useSsl;
+  final bool useRestApi;
   final Duration connectionTimeout;
   final Duration requestTimeout;
   final Duration reconnectInterval;
@@ -59,6 +64,8 @@ class RouterOsClient {
       onBadCertificate;
 
   Socket? _socket;
+  HttpClient? _restHttpClient;
+  String? _authPendingTag;
   StreamSubscription<List<int>>? _socketSubscription;
   Future<void>? _connectFuture;
   final List<int> _incoming = <int>[];
@@ -91,6 +98,32 @@ class RouterOsClient {
 
   Future<void> _connectInternal() async {
     await _closeSocketOnly();
+    if (useRestApi) {
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 5)
+        ..badCertificateCallback = (certificate, host, port) =>
+            onBadCertificate?.call(certificate, host, port) ?? false;
+      _restHttpClient = client;
+      _connected = true;
+      try {
+        final response = await _restRequest('GET', '/system/identity')
+            .timeout(requestTimeout);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw RouterOsException('REST API رفض تسجيل الدخول (HTTP ${response.statusCode}).');
+        }
+        _authenticated = true;
+        return;
+      } catch (error) {
+        _connected = false;
+        _authenticated = false;
+        client.close(force: true);
+        _restHttpClient = null;
+        if (error is TimeoutException) {
+          throw TimeoutException('تم فتح اتصال REST لكن لم يكتمل رد تسجيل الدخول', requestTimeout);
+        }
+        rethrow;
+      }
+    }
     try {
       final Socket socket;
       if (useSsl) {
@@ -123,7 +156,13 @@ class RouterOsClient {
         cancelOnError: false,
       );
 
-      await _authenticate().timeout(requestTimeout);
+      await _authenticate().timeout(
+        requestTimeout,
+        onTimeout: () => throw TimeoutException(
+          'تم فتح المنفذ ${port} لكن لم يكتمل رد تسجيل الدخول',
+          requestTimeout,
+        ),
+      );
       _authenticated = true;
     } catch (_) {
       _connected = false;
@@ -135,16 +174,30 @@ class RouterOsClient {
 
   Future<void> _authenticate() async {
     // RouterOS 6.43+ and RouterOS 7 support this login form.
+    // Login is deliberately untagged: some RouterOS versions omit .tag on
+    // authentication replies. The reader routes those replies to this waiter.
     final result = await _sendRequest(
       '/login',
       <String, String>{'name': username, 'password': password},
       timeout: requestTimeout,
       authenticateRequest: true,
+      addTag: false,
     );
-    if (result.any((row) => row['ret'] != null)) {
-      throw const RouterOsException(
-        'The router requested legacy challenge-response authentication, which is not supported.',
+    final challenge = result.firstOrNull?['ret'];
+    if (challenge != null && challenge.isNotEmpty) {
+      final challengeBytes = <int>[0, ...utf8.encode(password), ..._hexBytes(challenge)];
+      final digest = crypto.md5.convert(challengeBytes).bytes;
+      final response = '00${digest.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
+      final legacy = await _sendRequest(
+        '/login',
+        <String, String>{'name': username, 'response': response},
+        timeout: requestTimeout,
+        authenticateRequest: true,
+        addTag: false,
       );
+      if (legacy.any((row) => row['ret'] != null)) {
+        throw const RouterOsException('فشل تسجيل الدخول بطريقة challenge-response القديمة.');
+      }
     }
   }
 
@@ -175,7 +228,7 @@ class RouterOsClient {
     );
     _pending[tag] = _PendingRequest(streamController: controller);
     try {
-      _writeSentence(_buildSentence(path, args, tag));
+      unawaited(_writeSentence(_buildSentence(path, args, tag)).catchError((Object error, StackTrace stack) { _pending.remove(tag); if (!controller.isClosed) controller.addError(error, stack); }));
     } catch (error, stack) {
       _pending.remove(tag);
       controller.addError(error, stack);
@@ -213,19 +266,35 @@ class RouterOsClient {
     Map<String, String> args, {
     required Duration timeout,
     bool authenticateRequest = false,
+    bool addTag = true,
   }) async {
     if (!_connected || (!authenticateRequest && !_authenticated)) {
       await connect();
+    }
+    if (useRestApi) {
+      final method = path.endsWith('/print') || path.endsWith('/get') ? 'GET' : 'GET';
+      final resource = _restResource(path);
+      final response = await _restRequest(method, resource, args: args).timeout(timeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw RouterOsException('REST API HTTP ${response.statusCode}: ${response.body}');
+      }
+      final decoded = response.body.isEmpty ? null : jsonDecode(response.body);
+      if (decoded is List) {
+        return decoded.whereType<Map>().map((row) => row.map((k, v) => MapEntry('$k', '$v'))).toList();
+      }
+      if (decoded is Map) return <Map<String, String>>[decoded.map((k, v) => MapEntry('$k', '$v'))];
+      return <Map<String, String>>[];
     }
     if (!_connected || _socket == null) {
       throw const RouterOsException('RouterOS is not connected');
     }
 
-    final tag = _newTag();
+    final tag = addTag ? _newTag() : 'login-${_nextTag++}';
     final completer = Completer<List<Map<String, String>>>();
-    _pending[tag] = _PendingRequest(completer: completer, command: path);
+    _pending[tag] = _PendingRequest(completer: completer, command: path, authentication: authenticateRequest);
+    if (authenticateRequest) _authPendingTag = tag;
     try {
-      _writeSentence(_buildSentence(path, args, tag));
+      await _writeSentence(_buildSentence(path, args, tag, addTag: addTag));
     } catch (error, stack) {
       _pending.remove(tag);
       completer.completeError(error, stack);
@@ -249,8 +318,9 @@ class RouterOsClient {
   List<String> _buildSentence(
     String path,
     Map<String, String> args,
-    String tag,
-  ) {
+    String tag, {
+    bool addTag = true,
+  }) {
     if (!path.startsWith('/')) {
       throw ArgumentError.value(path, 'path', 'API command must start with /');
     }
@@ -262,13 +332,13 @@ class RouterOsClient {
       }
       words.add('=$key=${entry.value}');
     }
-    words.add('=.tag=$tag');
+    if (addTag) words.add('=.tag=$tag');
     return words;
   }
 
   String _newTag() => 'nova-${_nextTag++}';
 
-  void _writeSentence(List<String> words) {
+  Future<void> _writeSentence(List<String> words) async {
     final socket = _socket;
     if (!_connected || socket == null) {
       throw const SocketException('RouterOS socket is not connected');
@@ -281,6 +351,7 @@ class RouterOsClient {
     }
     bytes.add(0); // End of sentence.
     socket.add(bytes);
+    await socket.flush();
   }
 
   void _onBytes(List<int> data) {
@@ -387,12 +458,8 @@ class RouterOsClient {
       }
     }
 
-    final tag = fields['.tag'];
-    if (tag == null) {
-      // RouterOS may send untagged notifications. They are not responses to a
-      // request and are intentionally ignored by this command client.
-      return;
-    }
+    final tag = fields['.tag'] ?? _authPendingTag;
+    if (tag == null) return;
     final pending = _pending[tag];
     if (pending == null) return;
 
@@ -412,10 +479,12 @@ class RouterOsClient {
           command: pending.command,
         );
         _pending.remove(tag);
+        if (_authPendingTag == tag) _authPendingTag = null;
         pending.fail(error);
         break;
       case '!done':
         _pending.remove(tag);
+        if (_authPendingTag == tag) _authPendingTag = null;
         pending.complete();
         break;
       default:
@@ -428,6 +497,10 @@ class RouterOsClient {
     _connected = false;
     _authenticated = false;
     _socket = null;
+    _restHttpClient?.close(force: true);
+    _restHttpClient = null;
+    _restHttpClient?.close(force: true);
+    _restHttpClient = null;
     final subscription = _socketSubscription;
     _socketSubscription = null;
     if (subscription != null) unawaited(subscription.cancel());
@@ -462,6 +535,40 @@ class RouterOsClient {
     }
   }
 
+  List<int> _hexBytes(String hex) {
+    final value = hex.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+    if (value.length.isOdd) throw const FormatException('Invalid login challenge');
+    return <int>[
+      for (var i = 0; i < value.length; i += 2)
+        int.parse(value.substring(i, i + 2), radix: 16),
+    ];
+  }
+
+  String _restResource(String path) {
+    var value = path;
+    if (value.endsWith('/print')) value = value.substring(0, value.length - 6);
+    if (value.endsWith('/get')) value = value.substring(0, value.length - 4);
+    return value.startsWith('/') ? value : '/$value';
+  }
+
+  Future<http.Response> _restRequest(
+    String method,
+    String resource, {
+    Map<String, String> args = const <String, String>{},
+  }) async {
+    final scheme = useSsl ? 'https' : 'http';
+    final webPort = port == 8728 ? (useSsl ? 443 : 80) : port;
+    final uri = Uri(scheme: scheme, host: host, port: webPort, path: '/rest${_restResource(resource)}');
+    final credentials = base64Encode(utf8.encode('$username:$password'));
+    final request = await (_restHttpClient ?? HttpClient())
+        .openUrl(method, uri);
+    request.headers.set(HttpHeaders.authorizationHeader, 'Basic $credentials');
+    request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+    if (method == 'GET' && args.isNotEmpty) request.url.queryParameters;
+    final response = await request.close();
+    return http.Response.bytes(await response.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk)), response.statusCode, headers: response.headers);
+  }
+
   Future<void> close() async {
     if (_disposed) return;
     _disposed = true;
@@ -483,11 +590,13 @@ class _PendingRequest {
     this.completer,
     this.streamController,
     this.command,
+    this.authentication = false,
   });
 
   final Completer<List<Map<String, String>>>? completer;
   final StreamController<Map<String, String>>? streamController;
   final String? command;
+  final bool authentication;
   final List<Map<String, String>> rows = <Map<String, String>>[];
 
   void complete() {
