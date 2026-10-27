@@ -10,7 +10,6 @@ import '../../core/providers/router_providers.dart';
 const Color _bandBg = Color(0xFF080B12);
 const Color _bandPanel = Color(0xFF111722);
 const Color _bandMuted = Color(0xFF8D9AB0);
-const Color _bandAccent = Color(0xFF8B7CFF);
 const Color _bandRx = Color(0xFF43D9A3);
 const Color _bandTx = Color(0xFF67B7FF);
 const Color _bandRed = Color(0xFFFF657A);
