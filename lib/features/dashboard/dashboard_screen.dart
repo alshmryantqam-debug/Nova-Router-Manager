@@ -13,6 +13,7 @@ import '../system/system_manager_screen.dart';
 import '../network/network_tools_screen.dart';
 import '../pppoe/pppoe_screen.dart';
 import '../queues/queues_screen.dart';
+import '../neighbors/neighbors_connections_screen.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -22,7 +23,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, dhcpBinding, system }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -272,11 +273,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ? const PppoeScreen()
                   : _section == _DashboardSection.queues
                       ? const QueuesScreen()
-                      : _section == _DashboardSection.dhcpBinding
-                          ? const DhcpBindingScreen()
-                          : _section == _DashboardSection.system
-                              ? const SystemManagerScreen()
-                              : const NetworkToolsScreen(),
+                      : _section == _DashboardSection.neighbors
+                          ? const NeighborsConnectionsScreen()
+                          : _section == _DashboardSection.dhcpBinding
+                              ? const DhcpBindingScreen()
+                              : _section == _DashboardSection.system
+                                  ? const SystemManagerScreen()
+                                  : const NetworkToolsScreen(),
     );
   }
 
@@ -307,6 +310,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.hotspot, Icons.wifi_tethering_rounded, 'الهوتسبوت'),
             _drawerItem(_DashboardSection.pppoe, Icons.settings_ethernet_rounded, 'مشتركو PPPoE'),
             _drawerItem(_DashboardSection.queues, Icons.speed_rounded, 'الطوابير والسرعات'),
+            _drawerItem(_DashboardSection.neighbors, Icons.radar_rounded, 'كاشف الأجهزة والاتصالات'),
             _drawerItem(_DashboardSection.firewall, Icons.security_rounded, 'الشبكة والفايروول'),
             _drawerItem(_DashboardSection.dhcpBinding, Icons.devices_other_rounded, 'DHCP و IP Binding'),
             _drawerItem(_DashboardSection.system, Icons.settings_suggest_rounded, 'أدوات النظام والصيانة'),
@@ -344,6 +348,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.hotspot: return 'الهوتسبوت';
       case _DashboardSection.pppoe: return 'مشتركو PPPoE';
       case _DashboardSection.queues: return 'الطوابير والسرعات';
+      case _DashboardSection.neighbors: return 'كاشف الأجهزة والاتصالات';
       case _DashboardSection.firewall: return 'الشبكة والفايروول';
       case _DashboardSection.dhcpBinding: return 'DHCP و IP Binding';
       case _DashboardSection.system: return 'أدوات النظام والصيانة';
