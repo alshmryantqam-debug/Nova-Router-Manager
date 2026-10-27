@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
+import '../hotspot/hotspot_screen.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -260,7 +261,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       body: _section == _DashboardSection.home
           ? _buildHome()
-          : _RouterRecordsPanel(key: ValueKey<_DashboardSection>(_section), client: client, section: _section),
+          : _section == _DashboardSection.hotspot
+              ? const HotspotScreen()
+              : _RouterRecordsPanel(key: ValueKey<_DashboardSection>(_section), client: client, section: _section),
     );
   }
 
