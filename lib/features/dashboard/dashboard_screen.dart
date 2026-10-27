@@ -10,6 +10,7 @@ import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 import '../../core/storage/router_storage_service.dart';
 import '../hotspot/hotspot_screen.dart';
+import '../hotspot/hotspot_template_installer_screen.dart';
 import '../dhcp_binding/dhcp_binding_screen.dart';
 import '../system/system_manager_screen.dart';
 import '../network/network_tools_screen.dart';
@@ -42,7 +43,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers, rawQosWizard, telegramAlerts }
+enum _DashboardSection { home, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers, rawQosWizard, telegramAlerts, hotspotTemplateInstaller }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -331,7 +332,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                               ? const RawQosWizardScreen()
                                                                                               : _section == _DashboardSection.telegramAlerts
                                                                                                   ? const TelegramAlertsScreen()
-                                                                                                  : const NetworkToolsScreen(),
+                                                                                                  : _section == _DashboardSection.hotspotTemplateInstaller
+                                                                                                      ? const HotspotTemplateInstallerScreen()
+                                                                                                      : const NetworkToolsScreen(),
     );
   }
 
@@ -360,6 +363,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 10),
             _drawerItem(_DashboardSection.home, Icons.dashboard_rounded, 'الرئيسية'),
             _drawerItem(_DashboardSection.hotspot, Icons.wifi_tethering_rounded, 'الهوتسبوت'),
+            _drawerItem(_DashboardSection.hotspotTemplateInstaller, Icons.web_asset_rounded, 'مولّد صفحة دخول الهوتسبوت'),
             _drawerItem(_DashboardSection.pppoe, Icons.settings_ethernet_rounded, 'مشتركو PPPoE'),
             _drawerItem(_DashboardSection.queues, Icons.speed_rounded, 'الطوابير والسرعات'),
             _drawerItem(_DashboardSection.neighbors, Icons.radar_rounded, 'كاشف الأجهزة والاتصالات'),
@@ -436,6 +440,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.wirelessTowers: return 'الصحون والأبراج اللاسلكية';
       case _DashboardSection.rawQosWizard: return 'درع RAW وأولوية Ping / DNS';
       case _DashboardSection.telegramAlerts: return 'تنبيهات Telegram من الراوتر';
+      case _DashboardSection.hotspotTemplateInstaller: return 'مولّد صفحة دخول الهوتسبوت';
     }
   }
 
