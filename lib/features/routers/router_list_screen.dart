@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 import '../../core/storage/router_storage_service.dart';
+import '../settings/app_settings_screen.dart';
 
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
@@ -216,6 +217,11 @@ class _RouterListScreenState extends ConsumerState<RouterListScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'إعدادات التطبيق والأمان',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AppSettingsScreen())),
+            icon: const Icon(Icons.security_rounded, color: _accent),
+          ),
           IconButton(
             tooltip: 'إعادة فحص الاتصال',
             onPressed: _refreshing ? null : () => unawaited(_refreshPings()),
