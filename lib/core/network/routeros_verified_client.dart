@@ -60,7 +60,7 @@ extension VerifiedRouterOsCommands on RouterOsClient {
       readBack: () async {
         final rows = await command('$base/print', timeout: timeout);
         if (action == 'remove') {
-          return singletonSet ? rows.firstOrNull : rows.where((row) => row['.id'] == id).firstOrNull;
+          return rows.where((row) => row['.id'] == id).firstOrNull;
         }
         if (action == 'add') {
           bool matches(Map<String, String> row) => expected.entries.every(
@@ -72,7 +72,7 @@ extension VerifiedRouterOsCommands on RouterOsClient {
           }
           return found.firstOrNull;
         }
-        return rows.where((row) => row['.id'] == id).firstOrNull;
+        return singletonSet ? rows.firstOrNull : rows.where((row) => row['.id'] == id).firstOrNull;
       },
     );
 
