@@ -77,9 +77,13 @@ jobs:
           res = Path("android/app/src/main/res")
           (res / "values").mkdir(parents=True, exist_ok=True)
           colors = res / "values" / "colors.xml"
-          color_text = colors.read_text(encoding="utf-8") if colors.exists() else '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>\n'
+          color_text = colors.read_text(encoding="utf-8") if colors.exists() else """<?xml version="1.0" encoding="utf-8"?>
+          <resources>
+          </resources>
+          """
           if 'name="nova_icon_background"' not in color_text:
-              color_text = color_text.replace("</resources>", '    <color name="nova_icon_background">#080B12</color>\n</resources>')
+              color_text = color_text.replace("</resources>", """    <color name="nova_icon_background">#080B12</color>
+          </resources>""")
           colors.write_text(color_text, encoding="utf-8")
           drawable = res / "drawable"
           drawable.mkdir(parents=True, exist_ok=True)
