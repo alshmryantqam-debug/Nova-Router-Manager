@@ -11,7 +11,7 @@ void main() {
       expect(result.state, VerifiedWriteState.confirmed);
     });
     test('fails when read-back differs', () async {
-      final result = await runVerified(operation: VerifiedOperation.set, write: () async {}, readBack: () async => {'profile': 'old'}, expected: const {'profile': 'fast'}, previous: const {'profile': 'old'});
+      final result = await runVerified(operation: VerifiedOperation.set, write: () async => null, readBack: () async => {'profile': 'old'}, expected: const {'profile': 'fast'}, previous: const {'profile': 'old'});
       expect(result.state, VerifiedWriteState.failed);
     });
     test('timeout then applied is confirmed without replay', () async {
@@ -33,7 +33,7 @@ void main() {
       expect(error.kind, RouterErrorKind.routerRejected); expect(error.originalText, contains('no such item'));
     });
     test('maps untrusted TLS certificate', () {
-      final error = RouterError.from(const TlsException('bad certificate'));
+      final error = RouterError.from(const RouterOsException('bad certificate'));
       expect(error.kind, RouterErrorKind.untrustedCertificate);
     });
   });
