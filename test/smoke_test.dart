@@ -1,7 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_router_manager/core/network/routeros_compatibility.dart';
-
 import 'package:nova_router_manager/main.dart';
 
 void main() {
@@ -12,13 +11,10 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
 
-    // Allow the router-list first frame and async persisted-router load to
-    // settle. No real router credentials or live router are required.
+    // The saved-router list may load persisted state asynchronously.
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
   });
-}
-
 
   test('RouterOS capability model distinguishes v6 and v7', () {
     const v6 = RouterOsCapabilities(
@@ -48,3 +44,4 @@ void main() {
     expect(v7.wifi, isTrue);
     expect(v7.wireguard, isTrue);
   });
+}
