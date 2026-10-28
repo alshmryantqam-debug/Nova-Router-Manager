@@ -10,6 +10,7 @@ import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 import '../../core/storage/router_storage_service.dart';
 import '../hotspot/hotspot_screen.dart';
+import '../quick_actions/global_search_screen.dart';
 import '../hotspot/hotspot_template_installer_screen.dart';
 import '../dhcp_binding/dhcp_binding_screen.dart';
 import '../system/system_manager_screen.dart';
@@ -277,6 +278,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Text(activeRouter == null ? 'جلسة RouterOS' : activeRouter.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 10)),
         ]),
         actions: [
+          IconButton(
+            tooltip: 'البحث الشامل عن مشترك أو كرت أو IP أو MAC',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const GlobalSearchScreen()),
+            ),
+            icon: const Icon(Icons.search_rounded, color: _accent),
+          ),
           if (_section == _DashboardSection.home)
             IconButton(
               tooltip: 'تحديث الواجهات',
