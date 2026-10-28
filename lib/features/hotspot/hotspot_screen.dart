@@ -67,7 +67,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
               children: [
                 _ActiveTab(service: service),
                 _GenerateTab(service: service),
-                _UsersTab(service: service),
+                _UsersTab(service: service, client: client),
                 _ProfilesTab(service: service),
                 HotspotSalesReportScreen(client: client),
                 _HostsCookiesTab(client: client),
@@ -586,8 +586,9 @@ class _GenerateTabState extends State<_GenerateTab> {
 }
 
 class _UsersTab extends StatefulWidget {
-  const _UsersTab({required this.service});
+  const _UsersTab({required this.service, required this.client});
   final HotspotService service;
+  final RouterOsClient client;
   @override
   State<_UsersTab> createState() => _UsersTabState();
 }
@@ -606,7 +607,7 @@ class _UsersTabState extends State<_UsersTab> {
   @override
   void initState() {
     super.initState();
-    _pro = HotspotProService(widget.service.clientForAdvancedFeatures);
+    _pro = HotspotProService(widget.client);
     _future = _load();
   }
 
