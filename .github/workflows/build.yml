@@ -77,7 +77,9 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Analyze Dart source
-        run: flutter analyze --no-pub --no-fatal-infos --fatal-warnings lib
+        run: flutter analyze --no-fatal-infos
+      - name: Run Flutter tests
+        run: flutter test
       - name: Build release APK
         run: flutter build apk --release --no-tree-shake-icons
       - name: Verify APK
