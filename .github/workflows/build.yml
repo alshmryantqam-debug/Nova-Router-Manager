@@ -73,6 +73,28 @@ jobs:
                   t = re.sub(r'<string name="app_name">.*?</string>', '<string name="app_name">نوڨا (Nova)</string>', t, flags=re.S)
                   if '<string name="app_name">' not in t: t = t.replace('</resources>', '    <string name="app_name">نوڨا (Nova)</string>\n</resources>')
               p.write_text(t, encoding="utf-8")
+          # Supply a Nova-specific adaptive launcher icon instead of Flutter's template icon.
+          res = Path("android/app/src/main/res")
+          (res / "values").mkdir(parents=True, exist_ok=True)
+          colors = res / "values" / "colors.xml"
+          color_text = colors.read_text(encoding="utf-8") if colors.exists() else '<?xml version="1.0" encoding="utf-8"?>\\n<resources>\\n</resources>\\n'
+          if 'name="nova_icon_background"' not in color_text:
+              color_text = color_text.replace("</resources>", '    <color name="nova_icon_background">#080B12</color>\\n</resources>')
+          colors.write_text(color_text, encoding="utf-8")
+          drawable = res / "drawable"
+          drawable.mkdir(parents=True, exist_ok=True)
+          (drawable / "ic_nova_foreground.xml").write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#8B7CFF" android:pathData="M18,18 L34,18 L74,70 L74,18 L90,18 L90,90 L74,90 L34,38 L34,90 L18,90 Z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M42,18 L58,18 L90,60 L90,78 Z"/>
+          </vector>''', encoding="utf-8")
+          adaptive = res / "mipmap-anydpi-v26"
+          adaptive.mkdir(parents=True, exist_ok=True)
+          (adaptive / "ic_launcher.xml").write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/nova_icon_background"/>
+              <foreground android:drawable="@drawable/ic_nova_foreground"/>
+          </adaptive-icon>''', encoding="utf-8")
           print("Nova identity and Android permissions configured")
           PY
       - name: Configure release signing (if all secrets exist)
@@ -123,7 +145,7 @@ jobs:
               signingConfigs {
                   release {
                       if (keystorePropertiesFile.exists()) {
-                          storeFile file(keystoreProperties["storeFile"])
+                          storeFile rootProject.file(keystoreProperties["storeFile"])
                           storePassword keystoreProperties["storePassword"]
                           keyAlias keystoreProperties["keyAlias"]
                           keyPassword keystoreProperties["keyPassword"]
@@ -148,7 +170,7 @@ jobs:
               signingConfigs {
                   create("release") {
                       if (keystorePropertiesFile.exists()) {
-                          storeFile = file(keystoreProperties["storeFile"] as String)
+                          storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                           storePassword = keystoreProperties["storePassword"] as String
                           keyAlias = keystoreProperties["keyAlias"] as String
                           keyPassword = keystoreProperties["keyPassword"] as String
