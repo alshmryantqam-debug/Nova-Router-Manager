@@ -19,15 +19,15 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen>{
  Future<void> _search() async {
   final q=_query.text.trim();final c=ref.read(activeRouterClientProvider);
   if(q.isEmpty){if(mounted)setState(()=>_hits=[]);return;} if(c==null){setState(()=>_error='اتصل براوتر أولاً.');return;}
-  setState(()=>{_loading=true,_error=null,_message=null});
+  setState(() {_loading=true; _error=null; _message=null;});
   try{final rs=await Future.wait([_read(c,'/ip/hotspot/user'),_read(c,'/ip/hotspot/active'),_read(c,'/ppp/secret'),_read(c,'/ppp/active'),_read(c,'/ip/dhcp-server/lease')]);
    final found=<_Hit>[];for(var i=0;i<rs.length;i++){final kinds=['Hotspot User','Hotspot Active','PPPoE Secret','PPPoE Active','DHCP Lease'];final paths=['/ip/hotspot/user','/ip/hotspot/active','/ppp/secret','/ppp/active','/ip/dhcp-server/lease'];for(final row in rs[i]){if(_match(row,q))found.add(_Hit(kinds[i],paths[i],row));}}
-   if(mounted)setState(()=>_hits=found);
+   if(mounted)setState(() {_hits=found;});
   }catch(e){if(mounted)setState(()=>_error='فشل البحث: $e');}finally{if(mounted)setState(()=>_loading=false);}
  }
  Future<void> _action(String label,_Hit h,Future<void> Function(dynamic,_Hit) work) async {
   final c=ref.read(activeRouterClientProvider);if(c==null)return;
-  setState(()=>{_working=true,_error=null,_message=null});
+  setState(() {_working=true; _error=null; _message=null;});
   try{await work(c,h);if(mounted)setState(()=>_message='$label: تم التنفيذ.');await _search();}
   catch(e){if(mounted)setState(()=>_error='$label: $e');}finally{if(mounted)setState(()=>_working=false);}
  }
@@ -35,7 +35,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen>{
   final n=_name(h);if(n.isEmpty)throw Exception('اسم الحساب غير متوفر.');
   final hotspot=h.kind.startsWith('Hotspot');final ppp=h.kind.startsWith('PPPoE');if(!hotspot&&!ppp)throw Exception('اختر حساباً من Hotspot User أو PPPoE Secret.');
   final path=hotspot?'/ip/hotspot/user':'/ppp/secret';final rows=await c.command('$path/print',args:{'?name':n,'.proplist':'.id,name'});if(rows.isEmpty)throw Exception('الحساب غير موجود.');
-  await c.command('$path/set',args:{'.id':rows.first['.id']??'','${hotspot?'mac-address':'caller-id'}':hotspot?'00:00:00:00:00:00':''});
+  await c.command('$path/set',args:{'.id':rows.first['.id']??'','${hotspot?'mac-address':'caller-id'}':''});
  }
  Future<void> _kick(dynamic c,_Hit h) async {
   if(h.kind=='Hotspot Active'||h.kind=='PPPoE Active'){final path=h.kind=='Hotspot Active'?'/ip/hotspot/active/remove':'/ppp/active/remove';final id=h.row['.id'];if(id==null||id.isEmpty)throw Exception('معرّف الجلسة غير متوفر.');await c.command(path,args:{'.id':id});return;}
