@@ -117,9 +117,9 @@ jobs:
           }
           """
               if "keystorePropertiesFile" not in s:
-                  s = props + "\\n" + s
+                  s = props + "\n" + s
               if "signingConfigs {" not in s:
-                  s = re.sub(r"android\\s*\\{", """android {
+                  s = re.sub(r"android\s*\{", """android {
               signingConfigs {
                   release {
                       if (keystorePropertiesFile.exists()) {
@@ -130,8 +130,8 @@ jobs:
                       }
                   }
               }""", s, count=1)
-              s = re.sub(r"signingConfig\\s+signingConfigs\\.getByName\\(['\\"]debug['\\"]\\)", "signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug", s)
-              s = re.sub(r"signingConfig\\s*=\\s*signingConfigs\\.debug", "signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug", s)
+              s = re.sub(r"signingConfig\s+signingConfigs\.getByName\(['\"]debug['\"]\)", "signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug", s)
+              s = re.sub(r"signingConfig\s*=\s*signingConfigs\.debug", "signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug", s)
           else:
               props = """import java.util.Properties
           import java.io.FileInputStream
@@ -142,9 +142,9 @@ jobs:
           }
           """
               if "keystorePropertiesFile" not in s:
-                  s = props + "\\n" + s
+                  s = props + "\n" + s
               if "signingConfigs {" not in s:
-                  s = re.sub(r"android\\s*\\{", """android {
+                  s = re.sub(r"android\s*\{", """android {
               signingConfigs {
                   create("release") {
                       if (keystorePropertiesFile.exists()) {
@@ -155,8 +155,8 @@ jobs:
                       }
                   }
               }""", s, count=1)
-              s = re.sub(r"signingConfig\\s*=\\s*signingConfigs\\.getByName\\(['\\"]debug['\\"]\\)", 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
-              s = re.sub(r"signingConfig\\s*=\\s*signingConfigs\\.debug", 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
+              s = re.sub(r"signingConfig\s*=\s*signingConfigs\.getByName\(['\"]debug['\"]\)", 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
+              s = re.sub(r"signingConfig\s*=\s*signingConfigs\.debug", 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
           p.write_text(s, encoding="utf-8")
           print(f"Configured conditional signing in {p}")
           PY
