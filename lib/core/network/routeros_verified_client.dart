@@ -27,13 +27,18 @@ extension VerifiedRouterOsCommands on RouterOsClient {
       ..remove('id');
     if (action == 'enable') expected['disabled'] = 'false';
     if (action == 'disable') expected['disabled'] = 'true';
+    if (action == 'add' && path == '/ip/firewall/address-list/add') expected.remove('timeout');
     if (action == 'add' && expected.isEmpty) {
       throw ArgumentError('Verified add requires fields to identify the new object.');
     }
 
     Object? writeError;
+    final writePath = action == 'enable' || action == 'disable' ? '$base/set' : path;
+    final writeArgs = <String, String>{...args};
+    if (action == 'enable') writeArgs['disabled'] = 'false';
+    if (action == 'disable') writeArgs['disabled'] = 'true';
     try {
-      await command(path, args: args, timeout: timeout);
+      await command(writePath, args: writeArgs, timeout: timeout);
     } catch (error) {
       if (error is TimeoutException) {
         writeError = error;
@@ -44,8 +49,9 @@ extension VerifiedRouterOsCommands on RouterOsClient {
 
     final rows = await command('$base/print', args: const <String, String>{}, timeout: timeout);
     bool matches(Map<String, String> row) => expected.entries.every((entry) {
-      final actual = row[entry.key]?.trim().toLowerCase();
+      final actual = (row[entry.key] ?? '').trim().toLowerCase();
       final wanted = entry.value.trim().toLowerCase();
+      if (actual.isEmpty && wanted.isEmpty) return true;
       if (const <String>{'yes', 'true', '1'}.contains(actual) &&
           const <String>{'yes', 'true', '1'}.contains(wanted)) return true;
       if (const <String>{'no', 'false', '0'}.contains(actual) &&
