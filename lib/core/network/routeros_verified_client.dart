@@ -20,14 +20,16 @@ extension VerifiedRouterOsCommands on RouterOsClient {
     }
 
     final id = args['.id'] ?? args['numbers'] ?? args['id'];
-    if (action != 'add' && (id == null || id.isEmpty)) {
+    final singletonSet = action == 'set' && const <String>{'/ip/dns/set', '/system/identity/set', '/ip/cloud/set'}.contains(path);
+    if (action != 'add' && !singletonSet && (id == null || id.isEmpty)) {
       throw ArgumentError('A RouterOS item ID is required for $action.');
     }
 
     final expected = <String, String>{...args}
       ..remove('.id')
       ..remove('numbers')
-      ..remove('id');
+      ..remove('id')
+      ..remove('place-before');
     var writePath = path;
     final operation = action == 'remove'
         ? VerifiedOperation.remove
@@ -58,7 +60,7 @@ extension VerifiedRouterOsCommands on RouterOsClient {
       readBack: () async {
         final rows = await command('$base/print', timeout: timeout);
         if (action == 'remove') {
-          return rows.where((row) => row['.id'] == id).firstOrNull;
+          return singletonSet ? rows.firstOrNull : rows.where((row) => row['.id'] == id).firstOrNull;
         }
         if (action == 'add') {
           bool matches(Map<String, String> row) => expected.entries.every(

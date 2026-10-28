@@ -1,4 +1,5 @@
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 
 /// Live interface, SFP diagnostics, VLAN and bridge operations for RouterOS.
 class InterfacesService {
@@ -15,14 +16,14 @@ class InterfacesService {
 
   Future<void> setEnabled(String id, {required bool enabled}) async {
     if (id.trim().isEmpty) throw ArgumentError('معرّف المنفذ غير صالح');
-    await _client.command(enabled ? '/interface/enable' : '/interface/disable',
+    await _client.verifiedCommand(enabled ? '/interface/enable' : '/interface/disable',
         args: <String, String>{'numbers': id});
   }
 
   Future<void> renameInterface(String id, String name) async {
     final value = name.trim();
     if (id.trim().isEmpty || value.isEmpty) throw ArgumentError('أدخل اسم المنفذ');
-    await _client.command('/interface/set',
+    await _client.verifiedCommand('/interface/set',
         args: <String, String>{'.id': id, 'name': value});
   }
 
@@ -57,7 +58,7 @@ class InterfacesService {
     final parent = interfaceName.trim();
     if (safeName.isEmpty || parent.isEmpty) throw ArgumentError('أدخل اسم VLAN والمنفذ الأب');
     if (vlanId < 1 || vlanId > 4094) throw ArgumentError.value(vlanId, 'vlanId', 'VLAN ID يجب أن يكون بين 1 و4094');
-    await _client.command('/interface/vlan/add', args: <String, String>{
+    await _client.verifiedCommand('/interface/vlan/add', args: <String, String>{
       'name': safeName,
       'vlan-id': '$vlanId',
       'interface': parent,
@@ -83,7 +84,7 @@ class InterfacesService {
     if (portId.trim().isEmpty || bridgeName.trim().isEmpty) {
       throw ArgumentError('اختر المنفذ والبريدج');
     }
-    await _client.command('/interface/bridge/port/set', args: <String, String>{
+    await _client.verifiedCommand('/interface/bridge/port/set', args: <String, String>{
       '.id': portId,
       'bridge': bridgeName.trim(),
       'horizon': (horizon == null || horizon.trim().isEmpty) ? 'none' : horizon.trim(),

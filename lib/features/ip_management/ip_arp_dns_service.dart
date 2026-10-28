@@ -1,4 +1,5 @@
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 
 /// RouterOS IP address, ARP, pool and DNS operations.
 /// Methods call the live RouterOS API; they do not return fabricated records.
@@ -22,11 +23,11 @@ class IpArpDnsService {
     if (network.trim().isNotEmpty) args['network'] = network.trim();
     if (comment.trim().isNotEmpty) args['comment'] = comment.trim();
     if (disabled) args['disabled'] = 'yes';
-    await client.command('/ip/address/add', args: args);
+    await client.verifiedCommand('/ip/address/add', args: args);
   }
 
   Future<void> setAddressDisabled(String id, bool disabled) async =>
-      client.command(disabled ? '/ip/address/disable' : '/ip/address/enable', args: {'.id': _required(id, '.id')});
+      client.verifiedCommand(disabled ? '/ip/address/disable' : '/ip/address/enable', args: {'.id': _required(id, '.id')});
 
   Future<void> updateAddress(String id, {String? address, String? interface, String? comment}) async {
     final args = <String, String>{'.id': _required(id, '.id')};
@@ -34,11 +35,11 @@ class IpArpDnsService {
     if (interface != null) args['interface'] = interface.trim();
     if (comment != null) args['comment'] = comment.trim();
     if (args.length == 1) return;
-    await client.command('/ip/address/set', args: args);
+    await client.verifiedCommand('/ip/address/set', args: args);
   }
 
   Future<void> removeAddress(String id) async =>
-      client.command('/ip/address/remove', args: {'.id': _required(id, '.id')});
+      client.verifiedCommand('/ip/address/remove', args: {'.id': _required(id, '.id')});
 
   Future<List<Map<String, String>>> listArp() => client.command('/ip/arp/print');
 
@@ -46,7 +47,7 @@ class IpArpDnsService {
       client.command('/ip/arp/make-static', args: {'.id': _required(id, '.id')});
 
   Future<void> removeArp(String id) async =>
-      client.command('/ip/arp/remove', args: {'.id': _required(id, '.id')});
+      client.verifiedCommand('/ip/arp/remove', args: {'.id': _required(id, '.id')});
 
   Future<List<Map<String, String>>> listPools() => client.command('/ip/pool/print');
 
@@ -55,7 +56,7 @@ class IpArpDnsService {
     _required(ranges, 'ranges');
     final args = <String, String>{'name': name.trim(), 'ranges': ranges.trim()};
     if (comment.trim().isNotEmpty) args['comment'] = comment.trim();
-    await client.command('/ip/pool/add', args: args);
+    await client.verifiedCommand('/ip/pool/add', args: args);
   }
 
   Future<void> updatePool(String id, {String? name, String? ranges, String? comment}) async {
@@ -63,11 +64,11 @@ class IpArpDnsService {
     if (name != null) args['name'] = name.trim();
     if (ranges != null) args['ranges'] = ranges.trim();
     if (comment != null) args['comment'] = comment.trim();
-    if (args.length > 1) await client.command('/ip/pool/set', args: args);
+    if (args.length > 1) await client.verifiedCommand('/ip/pool/set', args: args);
   }
 
   Future<void> removePool(String id) async =>
-      client.command('/ip/pool/remove', args: {'.id': _required(id, '.id')});
+      client.verifiedCommand('/ip/pool/remove', args: {'.id': _required(id, '.id')});
 
   Future<List<Map<String, String>>> listDnsSettings() => client.command('/ip/dns/print');
 
@@ -84,11 +85,11 @@ class IpArpDnsService {
     if (address != null && address.trim().isNotEmpty) args['address'] = address.trim();
     if (type != null && type.trim().isNotEmpty) args['type'] = type.trim();
     if (comment != null && comment.trim().isNotEmpty) args['comment'] = comment.trim();
-    await client.command('/ip/dns/static/add', args: args);
+    await client.verifiedCommand('/ip/dns/static/add', args: args);
   }
 
   Future<void> removeDnsStatic(String id) async =>
-      client.command('/ip/dns/static/remove', args: {'.id': _required(id, '.id')});
+      client.verifiedCommand('/ip/dns/static/remove', args: {'.id': _required(id, '.id')});
 
   Future<void> flushDnsCache() async => client.command('/ip/dns/cache/flush');
 

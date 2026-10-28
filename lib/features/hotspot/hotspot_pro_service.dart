@@ -1,4 +1,5 @@
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 
 enum HotspotCardStatus { unused, active, timeExpired, quotaReached }
 
@@ -113,14 +114,14 @@ class HotspotProService {
     });
     String oldMac = '';
     for (final user in users) { if (user['.id'] == userId) { oldMac = user['mac-address'] ?? ''; break; } }
-    await client.command('/ip/hotspot/user/set', args: {'.id': userId, 'mac-address': ''});
+    await client.verifiedCommand('/ip/hotspot/user/set', args: {'.id': userId, 'mac-address': ''});
     await _removeMatching('/ip/hotspot/cookie/print', '/ip/hotspot/cookie/remove', 'user', username);
     await _removeMatching('/ip/hotspot/active/print', '/ip/hotspot/active/remove', 'user', username);
     if (oldMac.isNotEmpty) {
       final hosts = await fetchHosts();
       for (final host in hosts) {
         if (host['mac-address'] == oldMac && (host['.id'] ?? '').isNotEmpty) {
-          await client.command('/ip/hotspot/host/remove', args: {'.id': host['.id']!});
+          await client.verifiedCommand('/ip/hotspot/host/remove', args: {'.id': host['.id']!});
         }
       }
     }
@@ -154,7 +155,7 @@ class HotspotProService {
     final users = await fetchUsers();
     final targets = users.where((u) => u.id.isNotEmpty && (u.batch == batch || u.comment.contains(batch))).toList();
     for (final user in targets) {
-      await client.command('/ip/hotspot/user/remove', args: {'.id': user.id});
+      await client.verifiedCommand('/ip/hotspot/user/remove', args: {'.id': user.id});
     }
     return targets.length;
   }
@@ -196,11 +197,11 @@ class HotspotProService {
     };
     if (parentQueue.trim().isNotEmpty) args['parent-queue'] = parentQueue.trim();
     if (old == null) {
-      await client.command('/ip/hotspot/user/profile/add', args: args);
+      await client.verifiedCommand('/ip/hotspot/user/profile/add', args: args);
     } else {
       final id = old['.id'] ?? '';
       _requireId(id);
-      await client.command('/ip/hotspot/user/profile/set', args: {'.id': id, ...args});
+      await client.verifiedCommand('/ip/hotspot/user/profile/set', args: {'.id': id, ...args});
     }
   }
 
@@ -219,7 +220,7 @@ class HotspotProService {
     final rows = await client.command(printPath);
     for (final row in rows) {
       if (row[field] == value && (row['.id'] ?? '').isNotEmpty) {
-        await client.command(removePath, args: {'.id': row['.id']!});
+        await client.verifiedCommand(removePath, args: {'.id': row['.id']!});
       }
     }
   }
