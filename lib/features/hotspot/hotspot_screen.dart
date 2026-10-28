@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
 import 'hotspot_service.dart';
+import 'hotspot_pro_service.dart';
 import 'voucher_pdf_service.dart';
 import 'hotspot_sales_report_screen.dart';
 
@@ -40,7 +41,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = HotspotService(client);
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Column(
         children: [
           Container(
@@ -57,6 +58,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
                 Tab(icon: Icon(Icons.style_rounded, size: 18), text: 'Users'),
                 Tab(icon: Icon(Icons.layers_rounded, size: 18), text: 'Profiles'),
                 Tab(icon: Icon(Icons.payments_outlined, size: 18), text: 'Sales'),
+                Tab(icon: Icon(Icons.devices_other_rounded, size: 18), text: 'Hosts & Cookies'),
               ],
             ),
           ),
@@ -68,6 +70,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
                 _UsersTab(service: service),
                 _ProfilesTab(service: service),
                 HotspotSalesReportScreen(client: client),
+                _HostsCookiesTab(client: client),
               ],
             ),
           ),
@@ -585,188 +588,210 @@ class _GenerateTabState extends State<_GenerateTab> {
 class _UsersTab extends StatefulWidget {
   const _UsersTab({required this.service});
   final HotspotService service;
-
   @override
   State<_UsersTab> createState() => _UsersTabState();
 }
 
+enum _CardFilter { all, unused, active, timeExpired, quotaReached }
+
 class _UsersTabState extends State<_UsersTab> {
-  late Future<_UsersTabData> _future;
+  late Future<List<HotspotProUser>> _future;
+  late HotspotProService _pro;
   final TextEditingController _query = TextEditingController();
   String? _profileFilter;
-  bool _deletingExpired = false;
+  _CardFilter _filter = _CardFilter.all;
+  bool _working = false;
+  List<HotspotProfile> _profiles = [];
 
   @override
   void initState() {
     super.initState();
+    _pro = HotspotProService(widget.service.clientForAdvancedFeatures);
     _future = _load();
-    _query.addListener(_queryChanged);
   }
 
   @override
-  void dispose() {
-    _query.removeListener(_queryChanged);
-    _query.dispose();
-    super.dispose();
-  }
+  void dispose() { _query.dispose(); super.dispose(); }
 
-  void _queryChanged() => setState(() {});
-
-  Future<_UsersTabData> _load() async {
-    final results = await Future.wait<Object>([
-      widget.service.fetchUsers(),
-      widget.service.fetchProfiles(),
-    ]);
-    return _UsersTabData(
-      users: results[0] as List<HotspotUser>,
-      profiles: results[1] as List<HotspotProfile>,
-    );
+  Future<List<HotspotProUser>> _load() async {
+    final results = await Future.wait<Object>([_pro.fetchUsers(), widget.service.fetchProfiles()]);
+    _profiles = results[1] as List<HotspotProfile>;
+    return results[0] as List<HotspotProUser>;
   }
 
   void _reload() => setState(() => _future = _load());
 
-  Future<void> _deleteExpired() async {
-    setState(() => _deletingExpired = true);
-    try {
-      final count = await widget.service.deleteExpiredUsers();
-      if (!mounted) return;
-      _showSnack(context, count == 0 ? 'لا توجد كروت معلّمة كمنتهية.' : 'تم حذف ' + count.toString() + ' كرتًا منتهيًا.');
-      _reload();
-    } catch (error) {
-      if (mounted) _showSnack(context, 'تعذر حذف الكروت المنتهية: ' + _errorText(error), isError: true);
-    } finally {
-      if (mounted) setState(() => _deletingExpired = false);
-    }
+  Future<void> _run(String success, Future<void> Function() action) async {
+    if (_working) return;
+    setState(() => _working = true);
+    try { await action(); if (mounted) { _showSnack(context, success); _reload(); } }
+    catch (e) { if (mounted) _showSnack(context, 'فشلت العملية: '+_errorText(e), isError: true); }
+    finally { if (mounted) setState(() => _working = false); }
   }
 
-  Future<void> _deleteOne(HotspotUser user) async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: _hsPanel,
-        title: const Text('حذف الكرت؟'),
-        content: Text('سيتم حذف المستخدم ' + user.username + ' نهائيًا من الراوتر.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: _hsRed),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
-    if (accepted != true || !mounted) return;
-    try {
-      await widget.service.deleteUser(user.id);
-      if (mounted) {
-        _showSnack(context, 'تم حذف ' + user.username);
-        _reload();
-      }
-    } catch (error) {
-      if (mounted) _showSnack(context, 'فشل الحذف: ' + _errorText(error), isError: true);
-    }
+  Future<void> _topUp(HotspotProUser user) async {
+    final time = TextEditingController(text: '1h');
+    final gb = TextEditingController(text: '1');
+    final form = GlobalKey<FormState>();
+    final result = await showDialog<(String, double)>(context: context, builder: (ctx) => AlertDialog(
+      backgroundColor: _hsPanel, title: Text('تزويد الكرت · ${user.name}'),
+      content: Form(key: form, child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextFormField(controller: time, decoration: _decoration(hint: 'وقت إضافي مثل 2h أو 1d')),
+        const SizedBox(height: 8),
+        TextFormField(controller: gb, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: _decoration(hint: 'جيجابايت إضافية'), validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0 ? 'أدخل كمية أكبر من صفر' : null),
+      ])),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')), FilledButton(onPressed: () {
+        if (!(form.currentState?.validate() ?? false)) return;
+        Navigator.pop(ctx, (time.text.trim(), double.parse(gb.text.trim())));
+      }, child: const Text('تزويد'))],
+    ));
+    time.dispose(); gb.dispose();
+    if (result == null) return;
+    await _run('تم تحديث حدود الكرت', () async {
+      if (result.$1.isNotEmpty) await _pro.topUpTime(user.id, user.limitUptime, result.$1);
+      await _pro.topUpQuota(user.id, user.limitBytesTotal, (result.$2 * 1024 * 1024 * 1024).round());
+    });
+  }
+
+  Future<void> _deleteBatch() async {
+    final c = TextEditingController();
+    final batch = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      backgroundColor: _hsPanel, title: const Text('حذف دفعة كاملة'),
+      content: TextField(controller: c, decoration: _decoration(hint: 'رقم الدفعة NOVA-BATCH')),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')), FilledButton(onPressed: () => Navigator.pop(ctx, c.text.trim()), child: const Text('حذف الدفعة'))],
+    ));
+    c.dispose();
+    if (batch == null || batch.isEmpty) return;
+    await _run('تم حذف الكروت المحددة بالدفعة', () async {
+      final count = await _pro.deleteBatch(batch);
+      if (mounted) _showSnack(context, 'عدد الكروت المحذوفة: $count');
+    });
   }
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<_UsersTabData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(color: _hsAccent));
-          }
-          if (snapshot.hasError && !snapshot.hasData) {
-            return _HotspotError(message: _errorText(snapshot.error!), onRetry: _reload);
-          }
-          final data = snapshot.data ?? const _UsersTabData(users: [], profiles: []);
-          final query = _query.text.trim().toLowerCase();
-          final users = data.users.where((user) {
-            final profileOk = _profileFilter == null || _profileFilter!.isEmpty || user.profile == _profileFilter;
-            final queryOk = query.isEmpty ||
-                user.username.toLowerCase().contains(query) ||
-                user.profile.toLowerCase().contains(query) ||
-                user.comment.toLowerCase().contains(query);
-            return profileOk && queryOk;
-          }).toList(growable: false);
-
-          return RefreshIndicator(
-            color: _hsAccent,
-            backgroundColor: _hsPanel,
-            onRefresh: () async {
-              final next = _load();
-              setState(() => _future = next);
-              await next;
-            },
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
-              children: [
-                _TabSummary(
-                  title: 'كروت الهوتسبوت',
-                  subtitle: 'بحث بالاسم أو الباقة أو التعليق / رقم الدفعة',
-                  value: users.length.toString(),
-                  icon: Icons.style_rounded,
-                  color: _hsBlue,
-                  onRefresh: _reload,
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(color: _hsPanel, borderRadius: BorderRadius.circular(17), border: Border.all(color: Colors.white.withOpacity(0.06))),
-                  child: Column(children: [
-                    TextField(
-                      controller: _query,
-                      decoration: _decoration(hint: 'فلترة بالباقة أو رقم الدفعة أو الاسم').copyWith(
-                        prefixIcon: const Icon(Icons.search_rounded, color: _hsMuted),
-                        suffixIcon: IconButton(
-                          onPressed: () => _query.clear(),
-                          icon: const Icon(Icons.close_rounded, color: _hsMuted),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      value: _profileFilter,
-                      isExpanded: true,
-                      dropdownColor: const Color(0xFF1B2230),
-                      decoration: _decoration(hint: 'كل الباقات'),
-                      items: [
-                        const DropdownMenuItem<String>(value: null, child: Text('كل الباقات')),
-                        ...data.profiles.map((profile) => DropdownMenuItem<String>(
-                              value: profile.name,
-                              child: Text(profile.name, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                            )),
-                      ],
-                      onChanged: (value) => setState(() => _profileFilter = value),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _deletingExpired ? null : _deleteExpired,
-                        style: OutlinedButton.styleFrom(foregroundColor: _hsRed, side: BorderSide(color: _hsRed.withOpacity(0.45))),
-                        icon: _deletingExpired
-                            ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.delete_sweep_rounded, size: 18),
-                        label: Text(_deletingExpired ? 'جارٍ حذف المنتهي...' : 'حذف الكروت المنتهية'),
-                      ),
-                    ),
-                  ]),
-                ),
-                const SizedBox(height: 12),
-                if (users.isEmpty)
-                  const _EmptyPanel(
-                    icon: Icons.search_off_rounded,
-                    title: 'لا توجد كروت مطابقة',
-                    message: 'غيّر كلمات البحث أو الباقة، أو أنشئ دفعة جديدة.',
-                  )
-                else
-                  ...users.map((user) => _UserCard(user: user, onDelete: () => _deleteOne(user))),
-              ],
-            ),
-          );
-        },
+  Widget build(BuildContext context) => FutureBuilder<List<HotspotProUser>>(
+    future: _future,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) return const Center(child: CircularProgressIndicator(color: _hsAccent));
+      if (snapshot.hasError && !snapshot.hasData) return _HotspotError(message: _errorText(snapshot.error!), onRetry: _reload);
+      final all = snapshot.data ?? const <HotspotProUser>[];
+      final query = _query.text.trim().toLowerCase();
+      final users = all.where((u) {
+        final profileOk = _profileFilter == null || u.profile == _profileFilter;
+        final queryOk = query.isEmpty || u.name.toLowerCase().contains(query) || u.profile.toLowerCase().contains(query) || u.comment.toLowerCase().contains(query);
+        final statusOk = switch (_filter) {
+          _CardFilter.all => true, _CardFilter.unused => u.status == HotspotCardStatus.unused,
+          _CardFilter.active => u.status == HotspotCardStatus.active,
+          _CardFilter.timeExpired => u.status == HotspotCardStatus.timeExpired,
+          _CardFilter.quotaReached => u.status == HotspotCardStatus.quotaReached,
+        };
+        return profileOk && queryOk && statusOk;
+      }).toList();
+      return RefreshIndicator(color: _hsAccent, backgroundColor: _hsPanel, onRefresh: () async { final f = _load(); setState(() => _future = f); await f; },
+        child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(14), children: [
+          _TabSummary(title: 'كروت الهوتسبوت', subtitle: 'تصنيف الاستخدام والوقت والجيجات من بيانات الراوتر', value: '${users.length} / ${all.length}', icon: Icons.style_rounded, color: _hsBlue, onRefresh: _reload),
+          const SizedBox(height: 10),
+          TextField(controller: _query, onChanged: (_) => setState(() {}), decoration: _decoration(hint: 'بحث بالاسم أو الباقة أو رقم الدفعة').copyWith(prefixIcon: const Icon(Icons.search_rounded), suffixIcon: IconButton(onPressed: () { _query.clear(); setState(() {}); }, icon: const Icon(Icons.close_rounded)))),
+          const SizedBox(height: 8),
+          Wrap(spacing: 6, runSpacing: 4, children: [
+            _cardFilter('الكل', _CardFilter.all), _cardFilter('جديد', _CardFilter.unused), _cardFilter('قيد الاستخدام', _CardFilter.active), _cardFilter('منتهي الوقت', _CardFilter.timeExpired), _cardFilter('منتهي الجيجات', _CardFilter.quotaReached),
+          ]),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(value: _profileFilter, isExpanded: true, dropdownColor: const Color(0xFF1B2230), decoration: _decoration(hint: 'كل الباقات'), items: [
+            const DropdownMenuItem<String>(value: null, child: Text('كل الباقات')),
+            ..._profiles.map((p) => DropdownMenuItem(value: p.name, child: Text(p.name))),
+          ], onChanged: (v) => setState(() => _profileFilter = v)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, children: [
+            OutlinedButton.icon(onPressed: _working ? null : () => _run('تم حذف الكروت المنتهية', () async { final n = await _pro.deleteExpiredUsers(); if (mounted) _showSnack(context, 'تم حذف $n كرت'); }), icon: const Icon(Icons.delete_sweep_rounded, color: _hsRed), label: const Text('تنظيف المنتهي')),
+            OutlinedButton.icon(onPressed: _working ? null : _deleteBatch, icon: const Icon(Icons.delete_forever_rounded), label: const Text('حذف دفعة')),
+          ]),
+          if (_working) const LinearProgressIndicator(color: _hsAccent),
+          if (users.isEmpty) const _EmptyPanel(icon: Icons.search_off_rounded, title: 'لا توجد كروت مطابقة', message: 'غيّر الفلتر أو كلمات البحث.'),
+          ...users.map((u) => Container(margin: const EdgeInsets.only(top: 8), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: _hsPanel, borderRadius: BorderRadius.circular(15), border: Border.all(color: _statusColor(u.status).withOpacity(.25))), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [Expanded(child: Text(u.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))), Text(_statusLabel(u.status), style: TextStyle(color: _statusColor(u.status), fontSize: 10, fontWeight: FontWeight.bold))]),
+            const SizedBox(height: 4), Text('${u.profile} · ${u.disabled ? 'موقوف' : 'مفعّل'} · ${u.uptime}', style: const TextStyle(color: _hsMuted, fontSize: 11)),
+            Text('استهلاك: ${_formatBytes(u.consumedBytes)} / ${u.limitBytesTotal == 0 ? 'بلا حد' : _formatBytes(u.limitBytesTotal)} · MAC: ${u.macAddress.isEmpty ? 'غير محدد' : u.macAddress}', style: const TextStyle(color: _hsBlue, fontSize: 10)),
+            if (u.comment.isNotEmpty) Text(u.comment, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _hsMuted, fontSize: 9)),
+            const SizedBox(height: 6), Wrap(spacing: 5, runSpacing: 2, children: [
+              TextButton.icon(onPressed: _working ? null : () => _run('تم تصفير MAC والجلسات', () => _pro.resetMac(u.id, u.name)), icon: const Icon(Icons.restart_alt, size: 16), label: const Text('تصفير MAC')),
+              TextButton.icon(onPressed: _working ? null : () => _run('تم تصفير العدادات', () => _pro.resetCounters(u.id)), icon: const Icon(Icons.exposure_zero, size: 16), label: const Text('تصفير العدادات')),
+              TextButton.icon(onPressed: _working ? null : () => _topUp(u), icon: const Icon(Icons.add_circle_outline, size: 16), label: const Text('تزويد وقت/جيجات')),
+              TextButton.icon(onPressed: _working ? null : () => _run('تم حذف الكرت', () async { await widget.service.deleteUser(u.id); }), icon: const Icon(Icons.delete_outline, size: 16, color: _hsRed), label: const Text('حذف')),
+            ]),
+          ]))),
+        ]),
       );
+    },
+  );
+
+  Widget _cardFilter(String label, _CardFilter value) => ChoiceChip(label: Text(label, style: const TextStyle(fontSize: 10)), selected: _filter == value, onSelected: (_) => setState(() => _filter = value), selectedColor: _hsAccent.withOpacity(.25), backgroundColor: _hsPanel, labelStyle: const TextStyle(color: Colors.white));
+}
+
+Color _statusColor(HotspotCardStatus s) => switch (s) {
+  HotspotCardStatus.unused => _hsBlue, HotspotCardStatus.active => _hsGreen, HotspotCardStatus.timeExpired => _hsRed, HotspotCardStatus.quotaReached => const Color(0xFFFFB454),
+};
+String _statusLabel(HotspotCardStatus s) => switch (s) {
+  HotspotCardStatus.unused => 'جديد', HotspotCardStatus.active => 'قيد الاستخدام', HotspotCardStatus.timeExpired => 'منتهي الوقت', HotspotCardStatus.quotaReached => 'منتهي الجيجات',
+};
+
+class _HostsCookiesTab extends StatefulWidget {
+  const _HostsCookiesTab({required this.client});
+  final RouterOsClient client;
+  @override
+  State<_HostsCookiesTab> createState() => _HostsCookiesTabState();
+}
+
+class _HostsCookiesTabState extends State<_HostsCookiesTab> {
+  late HotspotProService _service;
+  late Future<(List<Map<String, String>>, List<Map<String, String>>)> _future;
+  bool _busy = false;
+  @override
+  void initState() { super.initState(); _service = HotspotProService(widget.client); _future = _load(); }
+  Future<(List<Map<String, String>>, List<Map<String, String>>)> _load() async {
+    final rows = await Future.wait([_service.fetchHosts(), _service.fetchCookies()]);
+    return (rows[0], rows[1]);
+  }
+  void _reload() => setState(() => _future = _load());
+  Future<void> _clearAll() async {
+    setState(() => _busy = true);
+    try {
+      final results = await Future.wait([_service.fetchHosts(), _service.fetchCookies()]);
+      for (final row in results[0]) { final id = row['.id'] ?? ''; if (id.isNotEmpty) await widget.client.command('/ip/hotspot/host/remove', args: {'.id': id}); }
+      for (final row in results[1]) { final id = row['.id'] ?? ''; if (id.isNotEmpty) await widget.client.command('/ip/hotspot/cookie/remove', args: {'.id': id}); }
+      if (mounted) _showSnack(context, 'تم مسح الأجهزة المعلقة والكوكيز المحفوظة.');
+      _reload();
+    } catch (e) { if (mounted) _showSnack(context, 'تعذر المسح: '+_errorText(e), isError: true); }
+    finally { if (mounted) setState(() => _busy = false); }
+  }
+  Widget _section(String title, IconData icon, List<Map<String, String>> rows, String empty) => Container(
+    margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(color: _hsPanel, borderRadius: BorderRadius.circular(15)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Icon(icon, color: _hsAccent), const SizedBox(width: 8), Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))), Text('${rows.length}', style: const TextStyle(color: _hsBlue))]),
+      if (rows.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(empty, style: const TextStyle(color: _hsMuted))),
+      ...rows.map((r) => ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text(r['user'] ?? r['mac-address'] ?? r['address'] ?? 'جهاز', style: const TextStyle(color: Colors.white, fontSize: 12)), subtitle: Text([r['address'], r['mac-address'], r['server'], r['expires']].whereType<String>().where((v) => v.isNotEmpty).join(' · '), style: const TextStyle(color: _hsMuted, fontSize: 10)), trailing: IconButton(onPressed: _busy || (r['.id'] ?? '').isEmpty ? null : () async {
+        final isCookie = title.contains('Cookies');
+        try { await widget.client.command(isCookie ? '/ip/hotspot/cookie/remove' : '/ip/hotspot/host/remove', args: {'.id': r['.id']!}); _reload(); }
+        catch(e) { if (mounted) _showSnack(context, _errorText(e), isError: true); }
+      }, icon: const Icon(Icons.delete_outline, color: _hsRed))),
+    ]),
+  );
+  @override
+  Widget build(BuildContext context) => FutureBuilder<(List<Map<String, String>>, List<Map<String, String>>)>(
+    future: _future, builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) return const Center(child: CircularProgressIndicator(color: _hsAccent));
+      if (snapshot.hasError && !snapshot.hasData) return _HotspotError(message: _errorText(snapshot.error!), onRetry: _reload);
+      final data = snapshot.data ?? ( <Map<String,String>>[], <Map<String,String>>[] );
+      return RefreshIndicator(color: _hsAccent, onRefresh: () async { final f = _load(); setState(() => _future = f); await f; }, child: ListView(padding: const EdgeInsets.all(14), children: [
+        _TabSummary(title: 'Hosts & Cookies', subtitle: 'أجهزة الهوتسبوت قبل الدخول والجلسات المحفوظة', value: '${data.$1.length + data.$2.length}', icon: Icons.devices_other_rounded, color: _hsBlue, onRefresh: _reload),
+        const SizedBox(height: 10),
+        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _busy ? null : _clearAll, icon: const Icon(Icons.cleaning_services_rounded), label: Text(_busy ? 'جارٍ المسح...' : 'مسح جميع Hosts وCookies'))),
+        _section('Hosts · أجهزة قبل تسجيل الدخول', Icons.router_rounded, data.$1, 'لا توجد أجهزة معلقة.'),
+        _section('Cookies · جلسات محفوظة', Icons.cookie_rounded, data.$2, 'لا توجد Cookies محفوظة.'),
+      ]));
+    },
+  );
 }
 
 class _ProfilesTab extends StatefulWidget {
