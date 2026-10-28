@@ -1,3 +1,4 @@
+import '../../core/network/routeros_verified_client.dart';
 import 'dart:math';
 
 import '../../core/network/routeros_client.dart';
@@ -272,12 +273,12 @@ class HotspotService {
     if (parentQueue.trim().isNotEmpty) args['parent-queue'] = parentQueue.trim();
 
     if (matchingProfile == null) {
-      await _client.command('/ip/hotspot/user/profile/add', args: args);
+      await _client.verifiedCommand('/ip/hotspot/user/profile/add', args: args);
     } else {
       if (matchingProfile.id.isEmpty) {
         throw RouterOsException('تعذر تحديث الباقة: لم يُرجع RouterOS معرّفها.');
       }
-      await _client.command(
+      await _client.verifiedCommand(
         '/ip/hotspot/user/profile/set',
         args: <String, String>{'.id': matchingProfile.id, ...args},
       );
@@ -337,7 +338,7 @@ class HotspotService {
 
   Future<void> kickActiveSession(String id) async {
     if (id.trim().isEmpty) throw ArgumentError.value(id, 'id', 'معرّف الجلسة مطلوب.');
-    await _client.command('/ip/hotspot/active/remove', args: <String, String>{'.id': id});
+    await _client.verifiedCommand('/ip/hotspot/active/remove', args: <String, String>{'.id': id});
   }
 
   Future<List<HotspotUser>> fetchUsers() async {
@@ -352,7 +353,7 @@ class HotspotService {
 
   Future<void> deleteUser(String id) async {
     if (id.trim().isEmpty) throw ArgumentError.value(id, 'id', 'معرّف الكرت مطلوب.');
-    await _client.command('/ip/hotspot/user/remove', args: <String, String>{'.id': id});
+    await _client.verifiedCommand('/ip/hotspot/user/remove', args: <String, String>{'.id': id});
   }
 
   Future<int> deleteExpiredUsers() async {
@@ -433,7 +434,7 @@ class HotspotService {
 
     try {
       for (final args in addArgs) {
-        await _client.command('/ip/hotspot/user/add', args: args);
+        await _client.verifiedCommand('/ip/hotspot/user/add', args: args);
         createdNames.add(args['name']!);
       }
     } catch (error) {

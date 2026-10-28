@@ -1,3 +1,4 @@
+import '../../core/network/routeros_verified_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -140,7 +141,7 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
       for (final entry in data.entries) {
         if (entry.value.isNotEmpty) args[entry.key] = entry.value;
       }
-      await _client!.command('/ip/firewall/nat/add', args: args);
+      await _client!.verifiedCommand('/ip/firewall/nat/add', args: args);
     }, 'تمت إضافة قاعدة NAT.');
   }
 
@@ -149,7 +150,7 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
     if (id == null || _client == null) return;
     final disabled = _truth(row['disabled']);
     await _run(() async {
-      await _client!.command(disabled ? '/ip/firewall/nat/enable' : '/ip/firewall/nat/disable', args: <String, String>{'.id': id});
+      await _client!.verifiedCommand(disabled ? '/ip/firewall/nat/enable' : '/ip/firewall/nat/disable', args: <String, String>{'.id': id});
     }, disabled ? 'تم تفعيل قاعدة NAT.' : 'تم تعطيل قاعدة NAT.');
   }
 
@@ -158,7 +159,7 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
     if (id == null || _client == null) return;
     if (!await _confirm('حذف قاعدة NAT؟', '${row['chain'] ?? ''} / ${row['action'] ?? ''} — الحذف نهائي من إعدادات الراوتر.')) return;
     await _run(() async {
-      await _client!.command('/ip/firewall/nat/remove', args: <String, String>{'.id': id});
+      await _client!.verifiedCommand('/ip/firewall/nat/remove', args: <String, String>{'.id': id});
     }, 'تم حذف قاعدة NAT.');
   }
 
@@ -176,7 +177,7 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
       for (final key in <String>['timeout', 'comment']) {
         if ((data[key] ?? '').isNotEmpty) args[key] = data[key]!;
       }
-      await _client!.command('/ip/firewall/address-list/add', args: args);
+      await _client!.verifiedCommand('/ip/firewall/address-list/add', args: args);
     }, 'تمت إضافة العنوان إلى Address List.');
   }
 
@@ -185,7 +186,7 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
     if (id == null || _client == null) return;
     if (!await _confirm('حذف عنوان من القائمة؟', '${row['address'] ?? ''} من ${row['list'] ?? ''}')) return;
     await _run(() async {
-      await _client!.command('/ip/firewall/address-list/remove', args: <String, String>{'.id': id});
+      await _client!.verifiedCommand('/ip/firewall/address-list/remove', args: <String, String>{'.id': id});
     }, 'تم حذف العنوان.');
   }
 

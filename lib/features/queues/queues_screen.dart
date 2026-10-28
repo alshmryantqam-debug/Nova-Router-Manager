@@ -1,3 +1,4 @@
+import '../../core/network/routeros_verified_client.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -157,7 +158,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
     controller.dispose();
     if (value == null) return;
     await _mutateTree(queue, () async {
-      await widget.client.command('/queue/tree/set', args: <String, String>{
+      await widget.client.verifiedCommand('/queue/tree/set', args: <String, String>{
         '.id': queue.id, 'max-limit': value,
       });
     }, 'تم تحديث max-limit للطابور ' + queue.name);
@@ -166,7 +167,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
   Future<void> _toggleTreeQueue(_TreeQueue queue) async {
     if (queue.id.isEmpty) return;
     await _mutateTree(queue, () async {
-      await widget.client.command('/queue/tree/set', args: <String, String>{
+      await widget.client.verifiedCommand('/queue/tree/set', args: <String, String>{
         '.id': queue.id, 'disabled': queue.disabled ? 'no' : 'yes',
       });
     }, queue.disabled ? 'تم تفعيل طابور الشجرة' : 'تم تعطيل طابور الشجرة');
@@ -191,7 +192,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
     final form = await _queueDialog();
     if (form == null) return;
     try {
-      await widget.client.command('/queue/simple/add', args: form);
+      await widget.client.verifiedCommand('/queue/simple/add', args: form);
       _show('تمت إضافة الطابور: ' + form['name']!);
       await _load();
     } catch (error) {
@@ -268,7 +269,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
     final form = await _queueDialog(queue: queue);
     if (form == null) return;
     await _mutate(queue, () async {
-      await widget.client.command('/queue/simple/set', args: <String, String>{
+      await widget.client.verifiedCommand('/queue/simple/set', args: <String, String>{
         '.id': queue.id,
         'target': form['target']!,
         'max-limit': form['max-limit']!,
@@ -280,7 +281,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
   Future<void> _toggle(_SimpleQueue queue) async {
     if (queue.id.isEmpty) return;
     await _mutate(queue, () async {
-      await widget.client.command('/queue/simple/set', args: <String, String>{
+      await widget.client.verifiedCommand('/queue/simple/set', args: <String, String>{
         '.id': queue.id,
         'disabled': queue.disabled ? 'no' : 'yes',
       });

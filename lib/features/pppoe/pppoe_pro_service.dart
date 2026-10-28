@@ -1,3 +1,4 @@
+import '../../core/network/routeros_verified_client.dart';
 import 'dart:async';
 
 import '../../core/network/routeros_client.dart';
@@ -161,7 +162,7 @@ class PppoeProService {
 
   Future<void> changeProfile(PppoeSubscriber subscriber, String profile) async {
     _requireId(subscriber.id);
-    await client.command('/ppp/secret/set', args: {'.id': subscriber.id, 'profile': profile});
+    await client.verifiedCommand('/ppp/secret/set', args: {'.id': subscriber.id, 'profile': profile});
   }
 
   Future<void> lockToCurrentDevice(PppoeSubscriber subscriber) async {
@@ -169,7 +170,7 @@ class PppoeProService {
     if (!subscriber.online || subscriber.activeId.isEmpty || subscriber.callerId.trim().isEmpty) {
       throw StateError('المشترك غير متصل أو لم يُرجع الراوتر Caller-ID صالحًا.');
     }
-    await client.command('/ppp/secret/set', args: {
+    await client.verifiedCommand('/ppp/secret/set', args: {
       '.id': subscriber.id,
       'caller-id': subscriber.callerId.trim(),
     });
@@ -177,7 +178,7 @@ class PppoeProService {
 
   Future<void> resetCallerId(PppoeSubscriber subscriber) async {
     _requireId(subscriber.id);
-    await client.command('/ppp/secret/set', args: {'.id': subscriber.id, 'caller-id': ''});
+    await client.verifiedCommand('/ppp/secret/set', args: {'.id': subscriber.id, 'caller-id': ''});
   }
 
   /// Updates the dynamic queue's max-limit without removing the PPP session.
@@ -193,7 +194,7 @@ class PppoeProService {
     if (uploadMbps <= 0 || downloadMbps <= 0 || uploadMbps > 10000 || downloadMbps > 10000) {
       throw ArgumentError('أدخل سرعة أكبر من صفر ولا تتجاوز 10000 Mbps.');
     }
-    await client.command('/queue/simple/set', args: {
+    await client.verifiedCommand('/queue/simple/set', args: {
       '.id': subscriber.queueId,
       'max-limit': '${_limit(uploadMbps)}/${_limit(downloadMbps)}',
     });
@@ -205,7 +206,7 @@ class PppoeProService {
 
   Future<void> disconnect(PppoeSubscriber subscriber) async {
     if (subscriber.activeId.isEmpty) throw StateError('المشترك غير متصل حاليًا.');
-    await client.command('/ppp/active/remove', args: {'.id': subscriber.activeId});
+    await client.verifiedCommand('/ppp/active/remove', args: {'.id': subscriber.activeId});
   }
 
   Future<List<Map<String, String>>> ping(String address) async {
@@ -224,7 +225,7 @@ class PppoeProService {
     final date = '${next.year.toString().padLeft(4, '0')}-${next.month.toString().padLeft(2, '0')}-${next.day.toString().padLeft(2, '0')}';
     final withoutExpiry = subscriber.comment.replaceAll(RegExp(r'(?:^|\\s)EXP:\\d{4}-\\d{2}-\\d{2}'), '').trim();
     final comment = [if (withoutExpiry.isNotEmpty) withoutExpiry, 'EXP:$date'].join(' ');
-    await client.command('/ppp/secret/set', args: {'.id': subscriber.id, 'comment': comment});
+    await client.verifiedCommand('/ppp/secret/set', args: {'.id': subscriber.id, 'comment': comment});
   }
 
   Future<void> setIsolationProfile(PppoeSubscriber subscriber, String profile) =>
