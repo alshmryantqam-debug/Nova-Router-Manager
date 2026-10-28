@@ -215,6 +215,9 @@ class HotspotService {
     required int validityDays,
     required int validityHours,
     int sharedUsers = 1,
+    String expiryMode = 'disable',
+    bool lockUserMac = false,
+    String parentQueue = '',
   }) async {
     final normalizedName = name.trim();
     if (normalizedName.isEmpty) {
@@ -231,8 +234,21 @@ class HotspotService {
     }
 
     final validity = _formatValidity(validityDays, validityHours);
-    final onLogin = buildExpiryOnLoginScript(validity);
-    final profileComment = 'NOVA|NOVA_VALIDITY=' +
+    if (!const {'remove', 'disable'}.contains(expiryMode)) {
+      throw ArgumentError('وضع انتهاء الصلاحية غير صحيح.');
+    }
+    final expiryScript = buildExpiryOnLoginScript(validity);
+    final macScript = lockUserMac ? r'''
+:local u $user;
+:local uid [/ip hotspot user find where name=$u];
+:local mac $"mac-address";
+:if ([:len $uid] > 0 && [:len $mac] > 0) do={
+  :local locked [/ip hotspot user get $uid mac-address];
+  :if ([:len $locked] = 0) do={ /ip hotspot user set $uid mac-address=$mac; }
+}
+''' : '';
+    final onLogin = [expiryScript, macScript].where((script) => script.isNotEmpty).join('\n');
+    final profileComment = 'NOVA|NOVA_EXPIRY_MODE=' + expiryMode + '|NOVA_LOCK_MAC=' + lockUserMac.toString() + '|NOVA_PARENT_QUEUE=' + parentQueue.trim() + '|NOVA_VALIDITY=' +
         validityDays.toString() +
         'd' +
         validityHours.toString() +
@@ -253,6 +269,7 @@ class HotspotService {
       'comment': profileComment,
       'shared-users': sharedUsers.toString(),
     };
+    if (parentQueue.trim().isNotEmpty) args['parent-queue'] = parentQueue.trim();
 
     if (matchingProfile == null) {
       await _client.command('/ip/hotspot/user/profile/add', args: args);
