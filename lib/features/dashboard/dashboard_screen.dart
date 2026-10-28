@@ -11,6 +11,7 @@ import '../../core/providers/router_providers.dart';
 import '../../core/storage/router_storage_service.dart';
 import '../hotspot/hotspot_screen.dart';
 import '../quick_actions/global_search_screen.dart';
+import '../users_monitor/unified_active_users_screen.dart';
 import '../hotspot/hotspot_template_installer_screen.dart';
 import '../dhcp_binding/dhcp_binding_screen.dart';
 import '../system/system_manager_screen.dart';
@@ -490,6 +491,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   boardName: data.boardName,
                   version: data.version,
                   host: ref.read(activeRouterDetailsProvider)?.host ?? '',
+                ),
+                const SizedBox(height: 12),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const UnifiedActiveUsersScreen()),
+                    ),
+                    child: Ink(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomLeft,
+                          colors: [Color(0xFF252044), Color(0xFF111D2A)],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: _accent.withOpacity(0.45)),
+                      ),
+                      child: Row(children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(color: _rxColor.withOpacity(0.13), borderRadius: BorderRadius.circular(14)),
+                          child: const Icon(Icons.people_alt_rounded, color: _rxColor, size: 26),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('مراقب اليوزرات والسرعات الحي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                          SizedBox(height: 4),
+                          Text('PPPoE + Hotspot + Simple Queues • تحديث مباشر', style: TextStyle(color: _muted, fontSize: 10)),
+                        ])),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: _accent, size: 16),
+                      ]),
+                    ),
+                  ),
                 ),
                 if (data.error != null) ...[
                   const SizedBox(height: 12),
