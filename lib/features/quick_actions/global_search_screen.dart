@@ -25,8 +25,8 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen>{
    if(mounted)setState(()=>_hits=found);
   }catch(e){if(mounted)setState(()=>_error='فشل البحث: $e');}finally{if(mounted)setState(()=>_loading=false);}
  }
- Future<void> _action(String label,Future<void> Function(dynamic,_Hit) work) async {
-  final c=ref.read(activeRouterClientProvider);if(c==null||_hits.isEmpty)return;final h=_hits.first;
+ Future<void> _action(String label,_Hit h,Future<void> Function(dynamic,_Hit) work) async {
+  final c=ref.read(activeRouterClientProvider);if(c==null)return;
   setState(()=>{_working=true,_error=null,_message=null});
   try{await work(c,h);if(mounted)setState(()=>_message='$label: تم التنفيذ.');await _search();}
   catch(e){if(mounted)setState(()=>_error='$label: $e');}finally{if(mounted)setState(()=>_working=false);}
@@ -47,10 +47,10 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen>{
   final path=hotspot?'/ip/hotspot/user':'/ppp/secret';final rows=await c.command('$path/print',args:{'?name':_name(h),'.proplist':'.id,disabled'});if(rows.isEmpty)throw Exception('الحساب غير موجود.');
   final id=rows.first['.id']??'';await c.command('$path/${rows.first['disabled']=='true'?'enable':'disable'}',args:{'.id':id});
  }
- Future<void> _speed() async {
-  if(_hits.isEmpty)return;final ctl=TextEditingController(text:_get(_hits.first.row,['profile']));
+ Future<void> _speed(_Hit hit) async {
+  final ctl=TextEditingController(text:_get(hit.row,['profile']));
   final value=await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(title:const Text('تعديل السرعة'),content:TextField(controller:ctl,decoration:const InputDecoration(labelText:'اسم Profile السرعة')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,ctl.text.trim()),child:const Text('تطبيق'))]));
-  if(value==null||value.isEmpty)return;await _action('تعديل السرعة',(c,h)async{final hs=h.kind=='Hotspot User',pp=h.kind=='PPPoE Secret';if(!hs&&!pp)throw Exception('اختر حساباً قابلاً للتعديل.');final p=hs?'/ip/hotspot/user':'/ppp/secret';final rows=await c.command('$p/print',args:{'?name':_name(h),'.proplist':'.id'});if(rows.isEmpty)throw Exception('الحساب غير موجود.');await c.command('$p/set',args:{'.id':rows.first['.id']??'','profile':value});});
+  if(value==null||value.isEmpty)return;await _action('تعديل السرعة',hit,(c,h)async{final hs=h.kind=='Hotspot User',pp=h.kind=='PPPoE Secret';if(!hs&&!pp)throw Exception('اختر حساباً قابلاً للتعديل.');final p=hs?'/ip/hotspot/user':'/ppp/secret';final rows=await c.command('$p/print',args:{'?name':_name(h),'.proplist':'.id'});if(rows.isEmpty)throw Exception('الحساب غير موجود.');await c.command('$p/set',args:{'.id':rows.first['.id']??'','profile':value});});
  }
  @override Widget build(BuildContext context)=>Scaffold(backgroundColor:_bg,appBar:AppBar(backgroundColor:_bg,title:const Text('البحث الشامل')),body:ListView(padding:const EdgeInsets.all(16),children:[
   TextField(controller:_query,onChanged:_changed,onSubmitted:(_)=>_search(),autofocus:true,decoration:InputDecoration(hintText:'اسم، كود كرت، IP أو MAC...',prefixIcon:const Icon(Icons.search),suffixIcon:IconButton(onPressed:(){_query.clear();setState(()=>_hits=[]);},icon:const Icon(Icons.clear)),filled:true,fillColor:_panel,border:OutlineInputBorder(borderRadius:BorderRadius.circular(15),borderSide:BorderSide.none)),
@@ -61,7 +61,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen>{
    const SizedBox(height:8),Text('IP: ${_get(h.row,['address'])}  |  MAC: ${_get(h.row,['mac-address','caller-id'])}',style:const TextStyle(color:_muted,fontSize:12)),
    Text('Profile: ${_get(h.row,['profile'])}  |  الحالة: ${h.row['disabled']=='true'?'معطّل':'مفعّل/غير محدد'}',style:const TextStyle(color:_muted,fontSize:12)),
    const SizedBox(height:12),Wrap(spacing:6,runSpacing:6,children:[
-    _btn('تصفير الماك',Icons.restart_alt,()=>_action('تصفير MAC',_mac)),_btn('طرد الجلسة',Icons.person_remove_alt_1,()=>_action('فصل الجلسة',_kick)),_btn('إيقاف / تفعيل',Icons.power_settings_new,()=>_action('تغيير حالة الحساب',_toggle)),_btn('تعديل السرعة',Icons.speed,_speed),
+    _btn('تصفير الماك',Icons.restart_alt,()=>_action('تصفير MAC',h,_mac)),_btn('طرد الجلسة',Icons.person_remove_alt_1,()=>_action('فصل الجلسة',h,_kick)),_btn('إيقاف / تفعيل',Icons.power_settings_new,()=>_action('تغيير حالة الحساب',h,_toggle)),_btn('تعديل السرعة',Icons.speed,()=>_speed(h)),
    ])
   ]))),
   if(_query.text.isEmpty)const Padding(padding:EdgeInsets.only(top:28),child:Text('ابحث باسم المشترك أو كود الكرت أو IP أو MAC.',textAlign:TextAlign.center,style:TextStyle(color:_muted)))
