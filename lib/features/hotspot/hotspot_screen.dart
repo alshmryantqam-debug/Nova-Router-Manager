@@ -775,7 +775,7 @@ class _HostsCookiesTabState extends State<_HostsCookiesTab> {
         final isCookie = title.contains('Cookies');
         try { await widget.client.command(isCookie ? '/ip/hotspot/cookie/remove' : '/ip/hotspot/host/remove', args: {'.id': r['.id']!}); _reload(); }
         catch(e) { if (mounted) _showSnack(context, _errorText(e), isError: true); }
-      }, icon: const Icon(Icons.delete_outline, color: _hsRed))),
+      }, icon: const Icon(Icons.delete_outline, color: _hsRed)))),
     ]),
   );
   @override
