@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 import '../../core/providers/router_providers.dart';
 import 'hotspot_service.dart';
 import 'hotspot_pro_service.dart';
@@ -758,8 +759,8 @@ class _HostsCookiesTabState extends State<_HostsCookiesTab> {
     setState(() => _busy = true);
     try {
       final results = await Future.wait([_service.fetchHosts(), _service.fetchCookies()]);
-      for (final row in results[0]) { final id = row['.id'] ?? ''; if (id.isNotEmpty) await widget.client.command('/ip/hotspot/host/remove', args: {'.id': id}); }
-      for (final row in results[1]) { final id = row['.id'] ?? ''; if (id.isNotEmpty) await widget.client.command('/ip/hotspot/cookie/remove', args: {'.id': id}); }
+      for (final row in results[0]) { final id = row['.id'] ?? ''; if (id.isNotEmpty) await widget.client.verifiedCommand('/ip/hotspot/host/remove', args: {'.id': id}); }
+      for (final row in results[1]) { final id = row['.id'] ?? ''; if (id.isNotEmpty) await widget.client.verifiedCommand('/ip/hotspot/cookie/remove', args: {'.id': id}); }
       if (mounted) _showSnack(context, 'تم مسح الأجهزة المعلقة والكوكيز المحفوظة.');
       _reload();
     } catch (e) { if (mounted) _showSnack(context, 'تعذر المسح: '+_errorText(e), isError: true); }
@@ -773,7 +774,7 @@ class _HostsCookiesTabState extends State<_HostsCookiesTab> {
       if (rows.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(empty, style: const TextStyle(color: _hsMuted))),
       ...rows.map((r) => ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text(r['user'] ?? r['mac-address'] ?? r['address'] ?? 'جهاز', style: const TextStyle(color: Colors.white, fontSize: 12)), subtitle: Text([r['address'], r['mac-address'], r['server'], r['expires']].whereType<String>().where((v) => v.isNotEmpty).join(' · '), style: const TextStyle(color: _hsMuted, fontSize: 10)), trailing: IconButton(onPressed: _busy || (r['.id'] ?? '').isEmpty ? null : () async {
         final isCookie = title.contains('Cookies');
-        try { await widget.client.command(isCookie ? '/ip/hotspot/cookie/remove' : '/ip/hotspot/host/remove', args: {'.id': r['.id']!}); _reload(); }
+        try { await widget.client.verifiedCommand(isCookie ? '/ip/hotspot/cookie/remove' : '/ip/hotspot/host/remove', args: {'.id': r['.id']!}); _reload(); }
         catch(e) { if (mounted) _showSnack(context, _errorText(e), isError: true); }
       }, icon: const Icon(Icons.delete_outline, color: _hsRed)))),
     ]),

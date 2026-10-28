@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 
 /// Live wireless, neighbor/ARP, and Ethernet PoE operations for RouterOS.
 class WirelessTowersService {
@@ -29,7 +30,7 @@ class WirelessTowersService {
       args['channel-width'] = channelWidth.trim();
     }
     if (args.length == 1) throw const FormatException('لا توجد تغييرات لحفظها.');
-    await client.command('/interface/wireless/set', args: args);
+    await client.verifiedCommand('/interface/wireless/set', args: args);
   }
 
   Future<List<Map<String, String>>> registrationTable() =>
@@ -48,7 +49,7 @@ class WirelessTowersService {
     if (!const <String>{'auto-on', 'off', 'forced-on'}.contains(mode)) {
       throw ArgumentError.value(mode, 'mode', 'وضع PoE غير مدعوم.');
     }
-    await client.command('/interface/ethernet/poe/set',
+    await client.verifiedCommand('/interface/ethernet/poe/set',
         args: <String, String>{'.id': id, 'poe-out': mode});
   }
 

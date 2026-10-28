@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cryptography/cryptography.dart';
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 
 class WireguardTunnelService {
   WireguardTunnelService(this.client);
@@ -29,7 +30,7 @@ class WireguardTunnelService {
     var peerAdded = false;
     var cloudTouched = false;
     try {
-      await client.command('/interface/wireguard/add', args: <String,String>{
+      await client.verifiedCommand('/interface/wireguard/add', args: <String,String>{
         'name': interfaceName, 'listen-port': '$listenPort', 'comment': '$prefix:interface',
       });
       interfaceAdded = true;
@@ -39,24 +40,24 @@ class WireguardTunnelService {
       final routerPublic = (iface['public-key'] ?? '').trim();
       if (routerPublic.isEmpty) throw StateError('تعذر قراءة المفتاح العام للراوتر.');
 
-      await client.command('/ip/address/add', args: <String,String>{
+      await client.verifiedCommand('/ip/address/add', args: <String,String>{
         'address': routerAddress, 'interface': interfaceName, 'comment': '$prefix:address',
       });
       addressAdded = true;
-      await client.command('/ip/firewall/filter/add', args: <String,String>{
+      await client.verifiedCommand('/ip/firewall/filter/add', args: <String,String>{
         'chain': 'input', 'protocol': 'udp', 'dst-port': '$listenPort',
         'action': 'accept', 'place-before': '0', 'comment': '$prefix:wan-port',
       });
-      await client.command('/ip/firewall/filter/add', args: <String,String>{
+      await client.verifiedCommand('/ip/firewall/filter/add', args: <String,String>{
         'chain': 'input', 'in-interface': interfaceName, 'src-address': clientAddress,
         'action': 'accept', 'place-before': '0', 'comment': '$prefix:peer-input',
       });
-      await client.command('/interface/wireguard/peers/add', args: <String,String>{
+      await client.verifiedCommand('/interface/wireguard/peers/add', args: <String,String>{
         'interface': interfaceName, 'public-key': clientPublic,
         'allowed-address': clientAddress, 'comment': '$prefix:client',
       });
       peerAdded = true;
-      await client.command('/ip/cloud/set', args: const <String,String>{'ddns-enabled':'yes'});
+      await client.verifiedCommand('/ip/cloud/set', args: const <String,String>{'ddns-enabled':'yes'});
       cloudTouched = true;
       String? endpoint;
       for (var i=0; i<6; i++) {
@@ -85,7 +86,7 @@ class WireguardTunnelService {
     } catch (_) {
       await _rollback(prefix:prefix, clientPublic:clientPublic, interfaceAdded:interfaceAdded, addressAdded:addressAdded, peerAdded:peerAdded);
       if (cloudTouched && oldDdns != null) {
-        try { await client.command('/ip/cloud/set', args: <String,String>{'ddns-enabled':oldDdns}); } catch (_) {}
+        try { await client.verifiedCommand('/ip/cloud/set', args: <String,String>{'ddns-enabled':oldDdns}); } catch (_) {}
       }
       rethrow;
     }
@@ -96,23 +97,23 @@ class WireguardTunnelService {
       if (peerAdded) {
         final peers = await listPeers();
         for (final row in peers.where((r) => r['public-key'] == clientPublic)) {
-          final id = row['.id']; if (id != null) await client.command('/interface/wireguard/peers/remove', args: <String,String>{'.id':id});
+          final id = row['.id']; if (id != null) await client.verifiedCommand('/interface/wireguard/peers/remove', args: <String,String>{'.id':id});
         }
       }
       final rules = await client.command('/ip/firewall/filter/print');
       for (final row in rules.where((r) => (r['comment'] ?? '').startsWith('$prefix:'))) {
-        final id = row['.id']; if (id != null) await client.command('/ip/firewall/filter/remove', args: <String,String>{'.id':id});
+        final id = row['.id']; if (id != null) await client.verifiedCommand('/ip/firewall/filter/remove', args: <String,String>{'.id':id});
       }
       if (addressAdded) {
         final rows = await client.command('/ip/address/print');
         for (final row in rows.where((r) => r['comment'] == '$prefix:address')) {
-          final id = row['.id']; if (id != null) await client.command('/ip/address/remove', args: <String,String>{'.id':id});
+          final id = row['.id']; if (id != null) await client.verifiedCommand('/ip/address/remove', args: <String,String>{'.id':id});
         }
       }
       if (interfaceAdded) {
         final rows = await listInterfaces();
         for (final row in rows.where((r) => r['comment'] == '$prefix:interface')) {
-          final id = row['.id']; if (id != null) await client.command('/interface/wireguard/remove', args: <String,String>{'.id':id});
+          final id = row['.id']; if (id != null) await client.verifiedCommand('/interface/wireguard/remove', args: <String,String>{'.id':id});
         }
       }
     } catch (_) {
@@ -121,7 +122,7 @@ class WireguardTunnelService {
   }
 
   Future<BackToHomeResult> enableBackToHome() async {
-    await client.command('/ip/cloud/set', args: const <String,String>{
+    await client.verifiedCommand('/ip/cloud/set', args: const <String,String>{
       'ddns-enabled':'yes', 'back-to-home-vpn':'enabled',
     });
     for (var i=0; i<15; i++) {
@@ -146,16 +147,16 @@ class WireguardTunnelService {
     throw StateError('Back To Home لم تصبح جاهزة؛ راجع /ip/cloud print وحاول مجدداً.');
   }
 
-  Future<void> disableBackToHome() async { await client.command('/ip/cloud/set', args: const <String,String>{'back-to-home-vpn':'revoked-and-disabled'}); }
+  Future<void> disableBackToHome() async { await client.verifiedCommand('/ip/cloud/set', args: const <String,String>{'back-to-home-vpn':'revoked-and-disabled'}); }
   Future<Map<String,String>> cloudStatus() async {
     final rows=await client.command('/ip/cloud/print');
     return rows.isEmpty ? <String,String>{} : rows.first;
   }
   Future<List<Map<String,String>>> listInterfaces() => client.command('/interface/wireguard/print');
   Future<List<Map<String,String>>> listPeers() => client.command('/interface/wireguard/peers/print');
-  Future<void> setTunnelDisabled(String id, bool disabled) async { await client.command(disabled ? '/interface/wireguard/disable' : '/interface/wireguard/enable', args: <String,String>{'.id':id}); }
-  Future<void> setPeerDisabled(String id, bool disabled) async { await client.command(disabled ? '/interface/wireguard/peers/disable' : '/interface/wireguard/peers/enable', args: <String,String>{'.id':id}); }
-  Future<void> removePeer(String id) async { await client.command('/interface/wireguard/peers/remove', args: <String,String>{'.id':id}); }
+  Future<void> setTunnelDisabled(String id, bool disabled) async { await client.verifiedCommand(disabled ? '/interface/wireguard/disable' : '/interface/wireguard/enable', args: <String,String>{'.id':id}); }
+  Future<void> setPeerDisabled(String id, bool disabled) async { await client.verifiedCommand(disabled ? '/interface/wireguard/peers/disable' : '/interface/wireguard/peers/enable', args: <String,String>{'.id':id}); }
+  Future<void> removePeer(String id) async { await client.verifiedCommand('/interface/wireguard/peers/remove', args: <String,String>{'.id':id}); }
 
   Future<void> removeTunnel(String id) async {
     final all=await listInterfaces();
@@ -176,13 +177,13 @@ class WireguardTunnelService {
     }
     final addresses=await client.command('/ip/address/print');
     for(final row in addresses.where((r)=>r['interface']==name)) {
-      final rowId=row['.id']; if(rowId!=null) await client.command('/ip/address/remove',args:<String,String>{'.id':rowId});
+      final rowId=row['.id']; if(rowId!=null) await client.verifiedCommand('/ip/address/remove',args:<String,String>{'.id':rowId});
     }
     final rules=await client.command('/ip/firewall/filter/print');
     for(final row in rules.where((r)=>(prefix!=null && (r['comment'] ?? '').startsWith(prefix)) || r['in-interface']==name || r['out-interface']==name)) {
-      final rowId=row['.id']; if(rowId!=null) await client.command('/ip/firewall/filter/remove',args:<String,String>{'.id':rowId});
+      final rowId=row['.id']; if(rowId!=null) await client.verifiedCommand('/ip/firewall/filter/remove',args:<String,String>{'.id':rowId});
     }
-    await client.command('/interface/wireguard/remove',args:<String,String>{'.id':id});
+    await client.verifiedCommand('/interface/wireguard/remove',args:<String,String>{'.id':id});
   }
 }
 
