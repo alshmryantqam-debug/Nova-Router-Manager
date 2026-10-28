@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/routeros_client.dart';
 import '../../core/providers/router_providers.dart';
+import 'pppoe_pro_service.dart';
 
 const Color _ppBg = Color(0xFF080B12);
 const Color _ppPanel = Color(0xFF111722);
@@ -12,6 +13,8 @@ const Color _ppMuted = Color(0xFF8D9AB0);
 const Color _ppAccent = Color(0xFF8B7CFF);
 const Color _ppGreen = Color(0xFF43D9A3);
 const Color _ppRed = Color(0xFFFF657A);
+
+enum _SubscriberFilter { all, online, offline, expired, locked }
 
 class PppoeScreen extends ConsumerWidget {
   const PppoeScreen({super.key});
@@ -24,565 +27,442 @@ class PppoeScreen extends ConsumerWidget {
   }
 }
 
-class PppoeWorkspace extends StatelessWidget {
+class PppoeWorkspace extends StatefulWidget {
   const PppoeWorkspace({super.key, required this.client});
   final RouterOsClient client;
 
   @override
-  Widget build(BuildContext context) => DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            Container(
-              color: _ppBg,
-              child: const TabBar(
-                isScrollable: true,
-                indicatorColor: _ppAccent,
-                labelColor: Colors.white,
-                unselectedLabelColor: _ppMuted,
-                tabs: [
-                  Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'PPPoE Secrets'),
-                  Tab(icon: Icon(Icons.wifi_rounded, size: 18), text: 'PPPoE Active'),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _PppoeSecretsTab(client: client),
-                  _PppoeActiveTab(client: client),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+  State<PppoeWorkspace> createState() => _PppoeWorkspaceState();
 }
 
-class _PppoeSecret {
-  const _PppoeSecret({
-    required this.id,
-    required this.name,
-    required this.profile,
-    required this.disabled,
-    required this.service,
-    required this.comment,
-  });
-
-  final String id;
-  final String name;
-  final String profile;
-  final bool disabled;
-  final String service;
-  final String comment;
-
-  factory _PppoeSecret.fromMap(Map<String, String> row) => _PppoeSecret(
-        id: row['.id'] ?? '',
-        name: row['name'] ?? '—',
-        profile: row['profile'] ?? 'default',
-        disabled: row['disabled'] == 'true',
-        service: row['service'] ?? 'any',
-        comment: row['comment'] ?? '',
-      );
-}
-
-class _PppoeSecretsTab extends StatefulWidget {
-  const _PppoeSecretsTab({required this.client});
-  final RouterOsClient client;
-
-  @override
-  State<_PppoeSecretsTab> createState() => _PppoeSecretsTabState();
-}
-
-class _PppoeSecretsTabState extends State<_PppoeSecretsTab> {
-  List<_PppoeSecret> _secrets = <_PppoeSecret>[];
-  List<String> _profiles = <String>[];
+class _PppoeWorkspaceState extends State<PppoeWorkspace> {
+  late PppoeProService _service;
+  List<PppoeSubscriber> _subscribers = [];
+  List<String> _profiles = [];
   bool _loading = true;
   String? _error;
-  final Set<String> _busy = <String>{};
-  String _filter = '';
+  String _query = '';
+  _SubscriberFilter _filter = _SubscriberFilter.all;
+  Timer? _refreshTimer;
+  final Set<String> _busy = {};
 
   @override
   void initState() {
     super.initState();
+    _service = PppoeProService(widget.client);
     unawaited(_load());
+    _refreshTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted && !_loading) unawaited(_load(silent: true));
+    });
   }
 
-  Future<void> _load() async {
-    if (mounted) setState(() { _loading = true; _error = null; });
+  @override
+  void didUpdateWidget(covariant PppoeWorkspace oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.client, widget.client)) {
+      _service = PppoeProService(widget.client);
+      unawaited(_load());
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent && mounted) setState(() { _loading = true; _error = null; });
     try {
-      final result = await Future.wait<List<Map<String, String>>>([
-        widget.client.command(
-          '/ppp/secret/print',
-          args: const <String, String>{'.proplist': '.id,name,profile,disabled,service,comment'},
-        ),
-        widget.client.command(
-          '/ppp/profile/print',
-          args: const <String, String>{'.proplist': 'name'},
-        ),
+      final results = await Future.wait<Object>([
+        _service.loadSubscribers(),
+        _service.loadProfiles(),
       ]);
-      final secrets = result[0]
-          .map(_PppoeSecret.fromMap)
-          .where((item) => item.name.isNotEmpty)
-          .toList(growable: false)
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      final profiles = result[1]
-          .map((row) => row['name'] ?? '')
-          .where((name) => name.isNotEmpty)
-          .toSet()
-          .toList()
-        ..sort();
       if (!mounted) return;
       setState(() {
-        _secrets = secrets;
-        _profiles = profiles;
+        _subscribers = results[0] as List<PppoeSubscriber>;
+        _profiles = results[1] as List<String>;
         _loading = false;
+        _error = null;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() { _loading = false; _error = _friendly(error); });
+      if (silent && _subscribers.isNotEmpty) _message('تعذر تحديث بيانات المشتركين: ${_friendly(error)}', isError: true);
     }
   }
 
-  Future<void> _addSecret() async {
-    final nameController = TextEditingController();
-    final passwordController = TextEditingController();
-    final noteController = TextEditingController();
-    var selectedProfile = _profiles.contains('default') ? 'default' : (_profiles.isEmpty ? 'default' : _profiles.first);
-    final formKey = GlobalKey<FormState>();
-    final form = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: _ppPanel,
-          title: const Text('إضافة مشترك PPPoE', style: TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    autofocus: true,
-                    decoration: const InputDecoration(labelText: 'اسم المستخدم'),
-                    validator: (value) => value == null || value.trim().isEmpty ? 'أدخل اسم المستخدم' : null,
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'كلمة المرور'),
-                    validator: (value) => value == null || value.isEmpty ? 'أدخل كلمة المرور' : null,
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    value: _profiles.contains(selectedProfile) ? selectedProfile : null,
-                    decoration: const InputDecoration(labelText: 'الباقة / Profile'),
-                    items: _profiles.map((name) => DropdownMenuItem<String>(value: name, child: Text(name))).toList(),
-                    onChanged: (value) {
-                      if (value != null) setDialogState(() => selectedProfile = value);
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(controller: noteController, decoration: const InputDecoration(labelText: 'ملاحظة اختيارية')),
-                  if (_profiles.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Text('لا توجد بروفايلات؛ سيُستخدم default.', style: TextStyle(color: _ppMuted, fontSize: 11)),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  Navigator.pop(dialogContext, <String, String>{
-                    'name': nameController.text.trim(),
-                    'password': passwordController.text,
-                    'profile': _profiles.isEmpty ? 'default' : selectedProfile,
-                    'comment': noteController.text.trim(),
-                  });
-                }
-              },
-              child: const Text('إضافة'),
-            ),
-          ],
-        ),
-      ),
-    );
-    nameController.dispose();
-    passwordController.dispose();
-    noteController.dispose();
-    if (form == null || !mounted) return;
+  List<PppoeSubscriber> get _visible {
+    final q = _query.trim().toLowerCase();
+    return _subscribers.where((s) {
+      final matchesQuery = q.isEmpty ||
+          s.name.toLowerCase().contains(q) ||
+          s.address.toLowerCase().contains(q) ||
+          s.callerId.toLowerCase().contains(q) ||
+          s.profile.toLowerCase().contains(q);
+      final matchesFilter = switch (_filter) {
+        _SubscriberFilter.all => true,
+        _SubscriberFilter.online => s.online,
+        _SubscriberFilter.offline => !s.online,
+        _SubscriberFilter.expired => s.expired,
+        _SubscriberFilter.locked => s.macLocked,
+      };
+      return matchesQuery && matchesFilter;
+    }).toList(growable: false);
+  }
+
+  Future<void> _perform(PppoeSubscriber subscriber, String label, Future<void> Function() action) async {
+    if (_busy.contains(subscriber.id)) return;
+    setState(() => _busy.add(subscriber.id));
     try {
-      await widget.client.command('/ppp/secret/add', args: <String, String>{
-        'name': form['name']!,
-        'password': form['password']!,
-        'profile': form['profile']!,
-        'service': 'pppoe',
-        if ((form['comment'] ?? '').isNotEmpty) 'comment': form['comment']!,
-      });
-      _message('تمت إضافة المشترك ' + form['name']!);
-      await _load();
+      await action();
+      if (mounted) _message(label);
+      await _load(silent: true);
     } catch (error) {
-      _message('فشلت الإضافة: ' + _friendly(error), isError: true);
+      if (mounted) _message(_friendly(error), isError: true);
+    } finally {
+      if (mounted) setState(() => _busy.remove(subscriber.id));
     }
   }
 
-  Future<void> _changeProfile(_PppoeSecret secret) async {
-    final options = _profiles.isEmpty ? <String>['default'] : _profiles;
-    var selected = options.contains(secret.profile) ? secret.profile : options.first;
-    final next = await showDialog<String>(
+  Future<String?> _chooseProfile({String? current, String title = 'اختيار الباقة', List<String>? options}) async {
+    final available = (options ?? _profiles).isEmpty ? <String>['default'] : (options ?? _profiles);
+    var selected = available.contains(current) ? current! : available.first;
+    return showDialog<String>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: _ppPanel,
-          title: Text('تغيير باقة ' + secret.name, style: const TextStyle(color: Colors.white)),
+          title: Text(title, style: const TextStyle(color: Colors.white)),
           content: DropdownButtonFormField<String>(
             value: selected,
-            decoration: const InputDecoration(labelText: 'Profile'),
-            items: options.map((name) => DropdownMenuItem<String>(value: name, child: Text(name))).toList(),
+            isExpanded: true,
+            items: available.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
             onChanged: (value) { if (value != null) setDialogState(() => selected = value); },
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, selected), child: const Text('حفظ الباقة')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, selected), child: const Text('تطبيق')),
           ],
         ),
       ),
     );
-    if (next == null || secret.id.isEmpty) return;
-    await _run(secret.id, () => widget.client.command('/ppp/secret/set', args: <String, String>{'.id': secret.id, 'profile': next}), 'تم تغيير الباقة', reload: true);
   }
 
-  Future<void> _toggleSecret(_PppoeSecret secret) async {
-    if (secret.id.isEmpty) return;
-    await _run(
-      secret.id,
-      () => widget.client.command('/ppp/secret/set', args: <String, String>{
-        '.id': secret.id,
-        'disabled': secret.disabled ? 'no' : 'yes',
-      }),
-      secret.disabled ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب',
-      reload: true,
-    );
+  Future<void> _changeProfile(PppoeSubscriber s) async {
+    final next = await _chooseProfile(current: s.profile, title: 'تغيير باقة ${s.name}');
+    if (next == null) return;
+    await _perform(s, 'تم تغيير الباقة إلى $next', () => _service.changeProfile(s, next));
   }
 
-  Future<void> _run(String id, Future<Object?> Function() action, String success, {bool reload = false}) async {
-    if (_busy.contains(id)) return;
-    setState(() => _busy.add(id));
-    try {
-      await action();
-      if (!mounted) return;
-      _message(success);
-      if (reload) await _load();
-    } catch (error) {
-      if (mounted) _message(_friendly(error), isError: true);
-    } finally {
-      if (mounted) setState(() => _busy.remove(id));
+  Future<void> _isolate(PppoeSubscriber s) async {
+    final candidates = _profiles.where((p) => RegExp(r'(عزل|منته|expired|isolat|suspend|block)', caseSensitive: false).hasMatch(p)).toList();
+    final options = candidates.isEmpty ? _profiles : candidates;
+    if (options.isEmpty) {
+      _message('لا توجد باقة عزل/انتهاء معرفة على الراوتر. أنشئ Profile مناسبًا أولًا.', isError: true);
+      return;
     }
+    final next = await _chooseProfile(current: options.first, title: 'تحويل ${s.name} إلى باقة العزل', options: options);
+    if (next == null) return;
+    await _perform(s, 'تم تحويل الحساب إلى $next', () => _service.setIsolationProfile(s, next));
   }
 
-  void _message(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: isError ? _ppRed.withOpacity(0.95) : const Color(0xFF202839),
-    ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final filtered = _secrets.where((secret) {
-      final query = _filter.trim().toLowerCase();
-      return query.isEmpty || secret.name.toLowerCase().contains(query) || secret.profile.toLowerCase().contains(query) || secret.comment.toLowerCase().contains(query);
-    }).toList(growable: false);
-    if (_loading && _secrets.isEmpty) return const Center(child: CircularProgressIndicator(color: _ppAccent));
-    if (_error != null && _secrets.isEmpty) return _PppoeMessage(title: 'تعذر تحميل حسابات PPPoE', message: _error!, onRetry: _load);
-    return RefreshIndicator(
-      color: _ppAccent,
-      backgroundColor: _ppPanel,
-      onRefresh: _load,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-        children: [
-          _PppoeHeader(title: 'PPPoE Secrets', subtitle: 'قراءة وتعديل الحسابات من /ppp/secret', count: _secrets.length, onRefresh: _load, onAdd: _addSecret),
-          const SizedBox(height: 12),
-          TextField(
-            onChanged: (value) => setState(() => _filter = value),
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search_rounded), hintText: 'بحث باسم المستخدم أو الباقة'),
-          ),
-          const SizedBox(height: 12),
-          if (filtered.isEmpty)
-            const _PppoeMessage(title: 'لا توجد حسابات مطابقة', message: 'اسحب للأسفل للتحديث أو أضف مشتركًا جديدًا.')
-          else
-            ...filtered.map((secret) => Container(
-                  margin: const EdgeInsets.only(bottom: 9),
-                  decoration: BoxDecoration(color: _ppPanel, borderRadius: BorderRadius.circular(15), border: Border.all(color: secret.disabled ? _ppRed.withOpacity(0.28) : Colors.white.withOpacity(0.06))),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 39,
-                              height: 39,
-                              decoration: BoxDecoration(color: (secret.disabled ? _ppRed : _ppGreen).withOpacity(0.13), borderRadius: BorderRadius.circular(12)),
-                              child: Icon(secret.disabled ? Icons.person_off_rounded : Icons.person_rounded, color: secret.disabled ? _ppRed : _ppGreen),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(secret.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
-                                const SizedBox(height: 4),
-                                Text('Profile: ' + secret.profile + '  ·  ' + secret.service, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ppMuted, fontSize: 10)),
-                              ]),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                              decoration: BoxDecoration(color: (secret.disabled ? _ppRed : _ppGreen).withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                              child: Text(secret.disabled ? 'معطّل' : 'فعّال', style: TextStyle(color: secret.disabled ? _ppRed : _ppGreen, fontSize: 10, fontWeight: FontWeight.w800)),
-                            ),
-                          ],
-                        ),
-                        if (secret.comment.isNotEmpty) ...[
-                          const SizedBox(height: 7),
-                          Align(alignment: Alignment.centerRight, child: Text(secret.comment, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ppMuted, fontSize: 10))),
-                        ],
-                        const Divider(height: 20, color: Color(0xFF283142)),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _busy.contains(secret.id) ? null : () => _changeProfile(secret),
-                                icon: const Icon(Icons.layers_rounded, size: 17),
-                                label: const Text('تغيير الباقة'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: FilledButton.tonalIcon(
-                                onPressed: _busy.contains(secret.id) ? null : () => _toggleSecret(secret),
-                                icon: Icon(secret.disabled ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 17),
-                                label: Text(secret.disabled ? 'تفعيل' : 'تعطيل'),
-                                style: FilledButton.styleFrom(foregroundColor: secret.disabled ? _ppGreen : _ppRed),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                )),
-          const SizedBox(height: 75),
-        ],
-      ),
-    );
-  }
-}
-
-class _PppoeActiveSession {
-  const _PppoeActiveSession({required this.id, required this.name, required this.address, required this.uptime, required this.service, required this.callerId});
-  final String id;
-  final String name;
-  final String address;
-  final String uptime;
-  final String service;
-  final String callerId;
-
-  factory _PppoeActiveSession.fromMap(Map<String, String> row) => _PppoeActiveSession(
-        id: row['.id'] ?? '',
-        name: row['name'] ?? '—',
-        address: row['address'] ?? '',
-        uptime: row['uptime'] ?? '—',
-        service: row['service'] ?? 'pppoe',
-        callerId: row['caller-id'] ?? '',
-      );
-}
-
-class _PppoeActiveTab extends StatefulWidget {
-  const _PppoeActiveTab({required this.client});
-  final RouterOsClient client;
-
-  @override
-  State<_PppoeActiveTab> createState() => _PppoeActiveTabState();
-}
-
-class _PppoeActiveTabState extends State<_PppoeActiveTab> {
-  List<_PppoeActiveSession> _sessions = <_PppoeActiveSession>[];
-  bool _loading = true;
-  String? _error;
-  final Set<String> _busy = <String>{};
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_load());
-  }
-
-  Future<void> _load() async {
-    if (mounted) setState(() { _loading = true; _error = null; });
-    try {
-      final rows = await widget.client.command(
-        '/ppp/active/print',
-        args: const <String, String>{'.proplist': '.id,name,address,uptime,service,caller-id'},
-      );
-      final sessions = rows.map(_PppoeActiveSession.fromMap).toList(growable: false)
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      if (!mounted) return;
-      setState(() { _sessions = sessions; _loading = false; });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() { _error = _friendly(error); _loading = false; });
-    }
-  }
-
-  Future<void> _disconnect(_PppoeActiveSession session) async {
-    if (session.id.isEmpty || _busy.contains(session.id)) return;
-    setState(() => _busy.add(session.id));
-    try {
-      await widget.client.command('/ppp/active/remove', args: <String, String>{'.id': session.id});
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم فصل جلسة ' + session.name)));
-      await _load();
-    } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل الفصل: ' + _friendly(error)), backgroundColor: _ppRed));
-    } finally {
-      if (mounted) setState(() => _busy.remove(session.id));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading && _sessions.isEmpty) return const Center(child: CircularProgressIndicator(color: _ppAccent));
-    if (_error != null && _sessions.isEmpty) return _PppoeMessage(title: 'تعذر تحميل الجلسات', message: _error!, onRetry: _load);
-    return RefreshIndicator(
-      color: _ppAccent,
-      backgroundColor: _ppPanel,
-      onRefresh: _load,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
-        children: [
-          _PppoeHeader(title: 'PPPoE Active', subtitle: 'الجلسات المتصلة عبر /ppp/active', count: _sessions.length, onRefresh: _load),
-          const SizedBox(height: 12),
-          if (_sessions.isEmpty)
-            const _PppoeMessage(title: 'لا توجد جلسات نشطة', message: 'سيظهر المشتركون المتصلون هنا مع عنوان IP ومدة الاتصال.')
-          else
-            ..._sessions.map((session) => Container(
-                  margin: const EdgeInsets.only(bottom: 9),
-                  decoration: BoxDecoration(color: _ppPanel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withOpacity(0.06))),
-                  child: Padding(
-                    padding: const EdgeInsets.all(13),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        const Icon(Icons.wifi_tethering_rounded, color: _ppGreen, size: 22),
-                        const SizedBox(width: 9),
-                        Expanded(child: Text(session.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800))),
-                        FilledButton.tonalIcon(
-                          onPressed: _busy.contains(session.id) ? null : () => _disconnect(session),
-                          icon: _busy.contains(session.id) ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.link_off_rounded, size: 16),
-                          label: const Text('فصل الجلسة'),
-                          style: FilledButton.styleFrom(foregroundColor: _ppRed),
-                        ),
-                      ]),
-                      const SizedBox(height: 10),
-                      Wrap(spacing: 8, runSpacing: 8, children: [
-                        _PppoePill(icon: Icons.language_rounded, label: 'IP: ' + (session.address.isEmpty ? '—' : session.address)),
-                        _PppoePill(icon: Icons.timer_outlined, label: 'Uptime: ' + session.uptime),
-                        if (session.callerId.isNotEmpty) _PppoePill(icon: Icons.router_rounded, label: session.callerId),
-                        _PppoePill(icon: Icons.settings_ethernet_rounded, label: session.service),
-                      ]),
-                    ]),
-                  ),
-                )),
-        ],
-      ),
-    );
-  }
-}
-
-class _PppoeHeader extends StatelessWidget {
-  const _PppoeHeader({required this.title, required this.subtitle, required this.count, required this.onRefresh, this.onAdd});
-  final String title;
-  final String subtitle;
-  final int count;
-  final VoidCallback onRefresh;
-  final VoidCallback? onAdd;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF292647), Color(0xFF111722)]),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _ppAccent.withOpacity(0.22)),
-        ),
-        child: Row(children: [
-          const Icon(Icons.settings_ethernet_rounded, color: _ppAccent, size: 25),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(color: _ppMuted, fontSize: 10)),
-          ])),
-          Text(count.toString(), style: const TextStyle(color: _ppGreen, fontSize: 22, fontWeight: FontWeight.w900)),
-          IconButton(onPressed: onRefresh, tooltip: 'تحديث', icon: const Icon(Icons.refresh_rounded, color: _ppAccent)),
-          if (onAdd != null)
-            IconButton(onPressed: onAdd, tooltip: 'إضافة مشترك', icon: const Icon(Icons.person_add_alt_1_rounded, color: _ppAccent)),
-        ]),
-      );
-}
-
-class _PppoePill extends StatelessWidget {
-  const _PppoePill({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-        decoration: BoxDecoration(color: const Color(0xFF0B1019), borderRadius: BorderRadius.circular(10)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 13, color: _ppMuted),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: _ppMuted, fontSize: 10)),
-        ]),
-      );
-}
-
-class _PppoeMessage extends StatelessWidget {
-  const _PppoeMessage({required this.title, required this.message, this.onRetry});
-  final String title;
-  final String message;
-  final Future<void> Function()? onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
+  Future<void> _speedDialog(PppoeSubscriber s) async {
+    final upload = TextEditingController(text: _guessMbps(s.maxLimit, 0));
+    final download = TextEditingController(text: _guessMbps(s.maxLimit, 1));
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<List<double>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _ppPanel,
+        title: Text('تعديل السرعة اللحظية · ${s.name}', style: const TextStyle(color: Colors.white)),
+        content: Form(
+          key: formKey,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.router_rounded, color: _ppAccent, size: 37),
-            const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 7),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: _ppMuted, fontSize: 12, height: 1.5)),
-            if (onRetry != null) ...[
-              const SizedBox(height: 14),
-              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('إعادة المحاولة')),
-            ],
+            Text('تعديل الطابور الديناميكي دون طرد جلسة PPPoE.', style: const TextStyle(color: _ppMuted, fontSize: 12)),
+            const SizedBox(height: 10),
+            TextFormField(controller: upload, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'رفع Upload (Mbps)'), validator: _validateSpeed),
+            const SizedBox(height: 8),
+            TextFormField(controller: download, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'تنزيل Download (Mbps)'), validator: _validateSpeed),
           ]),
         ),
-      );
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+          FilledButton(onPressed: () {
+            if (!(formKey.currentState?.validate() ?? false)) return;
+            Navigator.pop(dialogContext, [double.parse(upload.text), double.parse(download.text)]);
+          }, child: const Text('تطبيق فوري')),
+        ],
+      ),
+    );
+    upload.dispose();
+    download.dispose();
+    if (result == null) return;
+    await _perform(s, 'تم تحديث السرعة دون فصل الجلسة', () => _service.setLiveSpeed(s, uploadMbps: result[0], downloadMbps: result[1]));
+  }
+
+  String? _validateSpeed(String? value) {
+    final n = double.tryParse((value ?? '').trim());
+    if (n == null || n <= 0 || n > 10000) return 'أدخل رقمًا بين 0.01 و10000';
+    return null;
+  }
+
+  String _guessMbps(String limit, int index) {
+    final pieces = limit.split('/');
+    if (pieces.length <= index) return '10';
+    final value = pieces[index].trim();
+    final number = double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), ''));
+    if (number == null || number <= 0) return '10';
+    if (value.endsWith('G')) return (number * 1000).toString();
+    if (value.endsWith('M')) return number.toString();
+    if (value.endsWith('k')) return (number / 1000).toString();
+    return (number / 1000000).toStringAsFixed(2);
+  }
+
+  Future<void> _ping(PppoeSubscriber s) async {
+    try {
+      final rows = await _service.ping(s.address);
+      if (!mounted) return;
+      final report = rows.isEmpty ? 'لم يرجع الراوتر نتائج Ping.' : rows.map((r) {
+        final time = r['time'] ?? r['avg-rtt'] ?? '—';
+        final ttl = r['ttl'] ?? '';
+        final status = r['status'] ?? '';
+        return [if (time.isNotEmpty) 'الزمن: $time', if (ttl.isNotEmpty) 'TTL: $ttl', if (status.isNotEmpty) status].join(' · ');
+      }).join('\n');
+      await showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+        backgroundColor: _ppPanel,
+        title: Text('Ping · ${s.name} · ${s.address}', style: const TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(child: SelectableText(report, style: const TextStyle(color: _ppGreen))),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إغلاق'))],
+      ));
+    } catch (error) {
+      if (mounted) _message('فشل Ping: ${_friendly(error)}', isError: true);
+    }
+  }
+
+  Future<void> _openSubscriber(PppoeSubscriber s) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _ppBg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) => SafeArea(
+        child: StatefulBuilder(builder: (context, setSheetState) {
+          final busy = _busy.contains(s.id);
+          Widget action(String title, IconData icon, VoidCallback? onTap, {Color color = _ppAccent}) => SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: busy ? null : onTap,
+              icon: Icon(icon, color: color, size: 18),
+              label: Text(title),
+              style: OutlinedButton.styleFrom(alignment: Alignment.centerRight, foregroundColor: Colors.white, side: BorderSide(color: color.withOpacity(.35)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13)),
+            ),
+          );
+          return Padding(
+            padding: EdgeInsets.fromLTRB(18, 12, 18, MediaQuery.of(context).viewInsets.bottom + 20),
+            child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: _ppMuted.withOpacity(.5), borderRadius: BorderRadius.circular(4)))),
+              const SizedBox(height: 16),
+              Row(children: [
+                Icon(s.online ? Icons.wifi_rounded : Icons.wifi_off_rounded, color: s.online ? _ppGreen : _ppRed),
+                const SizedBox(width: 10),
+                Expanded(child: Text(s.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 19))),
+                Text(s.online ? 'متصل' : 'Offline', style: TextStyle(color: s.online ? _ppGreen : _ppRed, fontWeight: FontWeight.bold)),
+              ]),
+              const SizedBox(height: 12),
+              _detailLine('IP الحالي', s.address.isEmpty ? '—' : s.address),
+              _detailLine('Caller-ID / MAC', s.callerId.isEmpty ? 'غير مقفول' : s.callerId),
+              _detailLine('الباقة', s.profile),
+              _detailLine('السرعة الحالية RX / TX', '${s.rxMbps.toStringAsFixed(2)} / ${s.txMbps.toStringAsFixed(2)} Mbps'),
+              _detailLine('استهلاك الجلسة RX / TX', '${_bytes(s.sessionRxBytes)} / ${_bytes(s.sessionTxBytes)}'),
+              _detailLine('مدة الاتصال', s.uptime.isEmpty ? '—' : s.uptime),
+              _detailLine('انتهاء الصلاحية', s.expiry == null ? 'غير محدد' : _date(s.expiry!)),
+              _detailLine('آخر انقطاع', s.lastLoggedOut.isEmpty ? '—' : s.lastLoggedOut),
+              _detailLine('سبب الانقطاع', s.lastDisconnectReason.isEmpty ? '—' : s.lastDisconnectReason),
+              if (busy) const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator(color: _ppAccent)),
+              const SizedBox(height: 12),
+              action('تغيير الباقة', Icons.layers_rounded, () { Navigator.pop(sheetContext); unawaited(_changeProfile(s)); }),
+              action('تعديل السرعة اللحظية دون فصل', Icons.speed_rounded, () { Navigator.pop(sheetContext); unawaited(_speedDialog(s)); }),
+              action(s.macLocked ? 'إعادة قفل Caller-ID الحالي' : 'قفل على الجهاز الحالي', Icons.lock_rounded, s.online && s.callerId.isNotEmpty ? () { Navigator.pop(sheetContext); unawaited(_perform(s, 'تم قفل الحساب على Caller-ID الحالي', () => _service.lockToCurrentDevice(s))); } : null, color: _ppGreen),
+              action('فك قفل الماك (Reset Caller-ID)', Icons.lock_open_rounded, () { Navigator.pop(sheetContext); unawaited(_perform(s, 'تم مسح Caller-ID من الحساب', () => _service.resetCallerId(s))); }),
+              action('طرد لإعادة الاتصال', Icons.power_settings_new_rounded, s.online ? () { Navigator.pop(sheetContext); unawaited(_perform(s, 'تم إرسال أمر فصل الجلسة', () => _service.disconnect(s))); } : null, color: _ppRed),
+              action('فحص Ping مباشر', Icons.radar_rounded, s.address.isNotEmpty ? () { Navigator.pop(sheetContext); unawaited(_ping(s)); } : null),
+              action('تجديد شهر بضغطة زر', Icons.event_available_rounded, () { Navigator.pop(sheetContext); unawaited(_perform(s, 'تم تجديد الصلاحية شهرًا', () => _service.renewOneMonth(s))); }, color: _ppGreen),
+              action('تحويل لباقة العزل/الانتهاء', Icons.gpp_bad_rounded, () { Navigator.pop(sheetContext); unawaited(_isolate(s)); }, color: _ppRed),
+              const SizedBox(height: 8),
+            ])),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _detailLine(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      SizedBox(width: 145, child: Text(label, style: const TextStyle(color: _ppMuted, fontSize: 12))),
+      Expanded(child: SelectableText(value, style: const TextStyle(color: Colors.white, fontSize: 12))),
+    ]),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final online = _subscribers.where((s) => s.online).length;
+    final expired = _subscribers.where((s) => s.expired).length;
+    final rows = _visible;
+    if (_loading && _subscribers.isEmpty) return const Center(child: CircularProgressIndicator(color: _ppAccent));
+    if (_error != null && _subscribers.isEmpty) return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.cloud_off_rounded, color: _ppRed, size: 38),
+        const SizedBox(height: 10),
+        Text('تعذر تحميل مشتركي PPPoE\n$_error', textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة')),
+      ]),
+    ));
+    return RefreshIndicator(
+      color: _ppAccent,
+      backgroundColor: _ppPanel,
+      onRefresh: _load,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 32),
+        children: [
+          Row(children: [
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('إدارة البرودباند', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+              SizedBox(height: 3),
+              Text('لوحة موحّدة للمشتركين والجلسات والطوابير', style: TextStyle(color: _ppMuted, fontSize: 11)),
+            ])),
+            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: _ppAccent), tooltip: 'تحديث'),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _stat('إجمالي', '${_subscribers.length}', _ppAccent)),
+            const SizedBox(width: 8),
+            Expanded(child: _stat('متصل الآن', '$online', _ppGreen)),
+            const SizedBox(width: 8),
+            Expanded(child: _stat('منتهي', '$expired', _ppRed)),
+          ]),
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: (value) => setState(() => _query = value),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search_rounded),
+              hintText: 'بحث بالاسم أو IP أو MAC أو الباقة',
+              filled: true,
+              fillColor: _ppPanel,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              _filterChip('الكل', _SubscriberFilter.all),
+              _filterChip('المتصلون الآن', _SubscriberFilter.online),
+              _filterChip('المفصولون Offline', _SubscriberFilter.offline),
+              _filterChip('منتهية الصلاحية', _SubscriberFilter.expired),
+              _filterChip('المقفولون بالماك', _SubscriberFilter.locked),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('آخر تحديث لم يكتمل: $_error', style: const TextStyle(color: _ppRed, fontSize: 11))),
+          if (rows.isEmpty)
+            const Padding(padding: EdgeInsets.all(28), child: Text('لا يوجد مشتركون يطابقون البحث أو الفلتر.', textAlign: TextAlign.center, style: TextStyle(color: _ppMuted)))
+          else
+            ...rows.map(_subscriberCard),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, _SubscriberFilter value) => Padding(
+    padding: const EdgeInsets.only(left: 7),
+    child: ChoiceChip(
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      selected: _filter == value,
+      onSelected: (_) => setState(() => _filter = value),
+      selectedColor: _ppAccent.withOpacity(.25),
+      backgroundColor: _ppPanel,
+      side: BorderSide(color: _filter == value ? _ppAccent : Colors.white10),
+      labelStyle: TextStyle(color: _filter == value ? Colors.white : _ppMuted),
+    ),
+  );
+
+  Widget _stat(String title, String value, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
+    decoration: BoxDecoration(color: _ppPanel, borderRadius: BorderRadius.circular(14), border: Border.all(color: color.withOpacity(.2))),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(color: _ppMuted, fontSize: 10)),
+      const SizedBox(height: 4),
+      Text(value, style: TextStyle(color: color, fontSize: 19, fontWeight: FontWeight.w900)),
+    ]),
+  );
+
+  Widget _subscriberCard(PppoeSubscriber s) => Container(
+    margin: const EdgeInsets.only(bottom: 9),
+    decoration: BoxDecoration(color: _ppPanel, borderRadius: BorderRadius.circular(16), border: Border.all(color: (s.online ? _ppGreen : _ppRed).withOpacity(.22))),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _openSubscriber(s),
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(width: 39, height: 39, decoration: BoxDecoration(color: (s.online ? _ppGreen : _ppRed).withOpacity(.12), borderRadius: BorderRadius.circular(12)), child: Icon(s.online ? Icons.wifi_rounded : Icons.wifi_off_rounded, color: s.online ? _ppGreen : _ppRed)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(s.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+              const SizedBox(height: 3),
+              Text('${s.profile} · ${s.address.isEmpty ? 'لا يوجد IP نشط' : s.address}', style: const TextStyle(color: _ppMuted, fontSize: 11)),
+            ])),
+            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: (s.online ? _ppGreen : _ppRed).withOpacity(.12), borderRadius: BorderRadius.circular(8)), child: Text(s.online ? 'ONLINE' : 'OFFLINE', style: TextStyle(color: s.online ? _ppGreen : _ppRed, fontWeight: FontWeight.w900, fontSize: 10))),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _metric('RX', '${s.rxMbps.toStringAsFixed(2)} Mbps', _ppGreen)),
+            Expanded(child: _metric('TX', '${s.txMbps.toStringAsFixed(2)} Mbps', _ppAccent)),
+            Expanded(child: _metric('جلسة RX/TX', '${_bytes(s.sessionRxBytes)} / ${_bytes(s.sessionTxBytes)}', Colors.white70)),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Icon(s.macLocked ? Icons.lock_rounded : Icons.lock_open_rounded, size: 14, color: s.macLocked ? _ppGreen : _ppMuted),
+            const SizedBox(width: 5),
+            Expanded(child: Text(s.callerId.isEmpty ? 'Caller-ID غير مقفول' : s.callerId, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ppMuted, fontSize: 10))),
+            if (s.expired) const Text('منتهي', style: TextStyle(color: _ppRed, fontSize: 10, fontWeight: FontWeight.bold)),
+            const Icon(Icons.chevron_left_rounded, color: _ppMuted),
+          ]),
+        ]),
+      ),
+    ),
+  );
+
+  Widget _metric(String title, String value, Color color) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text(title, style: const TextStyle(color: _ppMuted, fontSize: 9)),
+    const SizedBox(height: 3),
+    Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 11)),
+  ]);
+
+  void _message(String value, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value), backgroundColor: isError ? _ppRed : const Color(0xFF202839)));
+  }
 }
 
+String _bytes(int bytes) {
+  if (bytes >= 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  if (bytes >= 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  return '$bytes B';
+}
+
+String _date(DateTime value) => '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
 String _friendly(Object error) {
-  if (error is TimeoutException) return 'انتهت مهلة الاتصال بالراوتر.';
-  if (error is RouterOsException) return error.message;
-  return error.toString().replaceFirst('Exception: ', '');
+  final value = error.toString().replaceFirst('RouterOsException: ', '');
+  if (value.contains('SocketException') || value.contains('connection')) return 'تعذر الاتصال بالراوتر؛ تحقق من الاتصال والصلاحيات.';
+  if (value.contains('TimeoutException') || value.contains('timed out')) return 'انتهت مهلة الطلب؛ حاول مجددًا.';
+  return value;
 }
