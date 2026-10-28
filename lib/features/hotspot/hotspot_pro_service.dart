@@ -183,11 +183,9 @@ class HotspotProService {
     final profiles = await client.command('/ip/hotspot/user/profile/print', args: const {'.proplist': '.id,name'});
     Map<String, String>? old;
     for (final profile in profiles) { if (profile['name'] == normalized) { old = profile; break; } }
-    final oldScript = lockUserMac ? _macLockScript() : '';
-    final expiryScript = expiryMode == 'remove'
-        ? ':local u $user; :local id [/ip hotspot user find where name=$u]; :if ([:len $id] > 0) do={ /ip hotspot user remove $id; }'
-        : ':local u $user; :local id [/ip hotspot user find where name=$u]; :if ([:len $id] > 0) do={ /ip hotspot user disable $id; }';
-    final script = [oldScript, expiryScript].where((s) => s.isNotEmpty).join('\n');
+    // Expiry behavior is stored in the profile metadata. Never remove or
+    // disable a user directly in on-login: that would trigger immediately.
+    final script = lockUserMac ? _macLockScript() : '';
     final comment = 'NOVA_EXPIRY_MODE=$expiryMode|NOVA_LOCK_MAC=$lockUserMac|NOVA_PARENT_QUEUE=$parentQueue';
     final args = <String, String>{
       'name': normalized,
