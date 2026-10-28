@@ -1031,12 +1031,6 @@ class _ProfilesTabState extends State<_ProfilesTab> {
       );
 }
 
-class _UsersTabData {
-  const _UsersTabData({required this.users, required this.profiles});
-  final List<HotspotUser> users;
-  final List<HotspotProfile> profiles;
-}
-
 class _TabSummary extends StatelessWidget {
   const _TabSummary({
     required this.title,
@@ -1125,40 +1119,6 @@ class _ActiveSessionCard extends StatelessWidget {
       );
 }
 
-class _UserCard extends StatelessWidget {
-  const _UserCard({required this.user, required this.onDelete});
-  final HotspotUser user;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 9),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        decoration: BoxDecoration(color: _hsPanel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withOpacity(0.055))),
-        child: Row(children: [
-          Container(width: 38, height: 38, decoration: BoxDecoration(color: user.isExpired ? _hsRed.withOpacity(0.12) : _hsBlue.withOpacity(0.12), borderRadius: BorderRadius.circular(11)), child: Icon(user.isExpired ? Icons.timer_off_rounded : Icons.confirmation_number_rounded, color: user.isExpired ? _hsRed : _hsBlue, size: 19)),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(user.username, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(user.profile + (user.disabled ? ' · Disabled' : ''), style: TextStyle(color: user.disabled ? _hsRed : _hsMuted, fontSize: 10)),
-            if (user.comment.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(user.comment, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _hsMuted, fontSize: 9)),
-            ],
-            if (user.limitUptime.isNotEmpty || user.limitBytesTotal > 0) ...[
-              const SizedBox(height: 4),
-              Text(
-                (user.limitUptime.isEmpty ? '' : 'Time: ' + user.limitUptime) +
-                    (user.limitBytesTotal == 0 ? '' : '  ·  Data: ' + _formatBytes(user.limitBytesTotal)),
-                style: const TextStyle(color: _hsBlue, fontSize: 9),
-              ),
-            ],
-          ])),
-          IconButton(tooltip: 'حذف الكرت', onPressed: onDelete, icon: const Icon(Icons.delete_outline_rounded, color: _hsRed)),
-        ]),
-      );
-}
 
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({required this.profile});

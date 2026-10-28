@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/router_providers.dart';
 
-const _bg=Color(0xFF080B12), _panel=Color(0xFF111722), _accent=Color(0xFF8B7CFF), _muted=Color(0xFF8D9AB0);
+const _bg=Color(0xFF080B12), _panel=Color(0xFF111722), _muted=Color(0xFF8D9AB0);
 class GlobalSearchScreen extends ConsumerStatefulWidget {
  const GlobalSearchScreen({super.key});
  @override ConsumerState<GlobalSearchScreen> createState()=>_GlobalSearchScreenState();
