@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import '../../core/network/routeros_client.dart';
 
 enum HotspotCardStatus { unused, active, timeExpired, quotaReached }
@@ -110,16 +108,20 @@ class HotspotProService {
 
   Future<void> resetMac(String userId, String username) async {
     _requireId(userId);
+    final users = await client.command('/ip/hotspot/user/print', args: const {
+      '.proplist': '.id,name,mac-address',
+    });
+    String oldMac = '';
+    for (final user in users) { if (user['.id'] == userId) { oldMac = user['mac-address'] ?? ''; break; } }
     await client.command('/ip/hotspot/user/set', args: {'.id': userId, 'mac-address': ''});
     await _removeMatching('/ip/hotspot/cookie/print', '/ip/hotspot/cookie/remove', 'user', username);
     await _removeMatching('/ip/hotspot/active/print', '/ip/hotspot/active/remove', 'user', username);
-    // Remove host entries by MAC only when the account's old MAC is known.
-    // Host rows do not reliably expose username on every RouterOS version.
-    final hosts = await fetchHosts();
-    for (final host in hosts) {
-      final id = host['.id'] ?? '';
-      if (id.isNotEmpty && (host['authorized'] == 'true' || (host['mac-address'] ?? '').isNotEmpty)) {
-        await client.command('/ip/hotspot/host/remove', args: {'.id': id});
+    if (oldMac.isNotEmpty) {
+      final hosts = await fetchHosts();
+      for (final host in hosts) {
+        if (host['mac-address'] == oldMac && (host['.id'] ?? '').isNotEmpty) {
+          await client.command('/ip/hotspot/host/remove', args: {'.id': host['.id']!});
+        }
       }
     }
   }
@@ -179,7 +181,8 @@ class HotspotProService {
     if (normalized.isEmpty) throw ArgumentError('اسم الباقة مطلوب.');
     if (!const {'remove', 'disable'}.contains(expiryMode)) throw ArgumentError('وضع الانتهاء غير صالح.');
     final profiles = await client.command('/ip/hotspot/user/profile/print', args: const {'.proplist': '.id,name'});
-    final old = profiles.where((p) => p['name'] == normalized).firstOrNull;
+    Map<String, String>? old;
+    for (final profile in profiles) { if (profile['name'] == normalized) { old = profile; break; } }
     final oldScript = lockUserMac ? _macLockScript() : '';
     final expiryScript = expiryMode == 'remove'
         ? ':local u $user; :local id [/ip hotspot user find where name=$u]; :if ([:len $id] > 0) do={ /ip hotspot user remove $id; }'
