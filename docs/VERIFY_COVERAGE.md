@@ -12,14 +12,14 @@ Batch 20-C status. A write may only be described as confirmed after a fresh read
 ## Feature coverage
 | Feature | Status | Notes |
 |---|---|---|
-| PPPoE | Partial / helper available | Existing mutations still require conversion to per-operation read-back before they can claim confirmation. |
-| Hotspot | Partial / helper available | Bulk voucher creation must verify count and created IDs before claiming confirmation. |
-| Address Lists / NAT | Partial / helper available | Existing mutations are not yet all routed through `runVerified`. |
-| Simple Queue | Partial / helper available | Existing queue mutations are not yet all routed through `runVerified`. |
-| Dashboard, diagnostics, DHCP, neighbors, firewall, Wi-Fi, WireGuard, automation, templates and other screens | Not yet converted | Audit remaining mutation call-sites before marking verified. |
+| PPPoE | Wired to verified writes | Profile, Caller-ID, live speed, expiry comment and disconnect mutations use a fresh read-back. |
+| Hotspot | Wired to verified writes | Profile create/update, user/voucher creation, active disconnect and user removal are verified per operation. A multi-voucher batch can be partially applied if one voucher fails; it is not an atomic router transaction. |
+| Address Lists / NAT | Wired to verified writes | NAT add/toggle/remove and address-list add/remove are read back. Address-list timeout is excluded from exact comparison because RouterOS returns remaining time, not the original duration. |
+| Simple Queue / Queue Tree | Wired to verified writes | Queue add/edit/toggle and queue-tree limit/toggle operations verify the stored fields. |
+| Dashboard, diagnostics, DHCP, neighbors, other firewall screens, Wi-Fi, WireGuard, automation, templates and other screens | Not yet converted | These screens may still have direct mutation calls; do not assume global verification coverage outside the four areas above. |
 
 ## RouterOS v6
-The repository contains a binary RouterOS API socket client using TCP/8728 and API-SSL on TCP/8729 in `lib/core/network/routeros_client.dart`. REST is a separate v7-only transport option. Thus v6 binary API transport exists. This batch does not change connection-screen gating; the explicit message when REST is selected for v6 remains pending.
+The repository contains a binary RouterOS API socket client using TCP/8728 and API-SSL on TCP/8729 in `lib/core/network/routeros_client.dart`. REST is a separate v7-only transport option. The four migrated feature areas use the existing client and do not require REST specifically, so they can use binary API on v6. The explicit connection-screen gate that prevents selecting REST for a v6 router is still pending; a REST selection on v6 should be treated as unsupported rather than automatically falling back.
 
 ## Limitation
-This batch adds common error and verification primitives and tests. It does **not** claim every existing screen is migrated. Do not show “تم” in a screen until its mutation path is wired to `runVerified` with read-back.
+The shared verifier is now used by the listed four feature areas. Other screens remain outside this coverage until their writes are migrated. A confirmed result means the requested fields were observed in a fresh RouterOS read; it does not make a group of multiple writes atomic.
