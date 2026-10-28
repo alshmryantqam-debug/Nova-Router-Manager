@@ -585,6 +585,7 @@ class RouterOsClient {
     var value = path;
     if (value.endsWith('/print')) value = value.substring(0, value.length - 6);
     if (value.endsWith('/get')) value = value.substring(0, value.length - 4);
+    if (value.endsWith('/add')) value = value.substring(0, value.length - 4);
     return value.startsWith('/') ? value : '/$value';
   }
 
