@@ -68,7 +68,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
                 _ActiveTab(service: service),
                 _GenerateTab(service: service),
                 _UsersTab(service: service, client: client),
-                _ProfilesTab(service: service),
+                _ProfilesTab(service: service, client: client),
                 HotspotSalesReportScreen(client: client),
                 _HostsCookiesTab(client: client),
               ],
@@ -796,8 +796,9 @@ class _HostsCookiesTabState extends State<_HostsCookiesTab> {
 }
 
 class _ProfilesTab extends StatefulWidget {
-  const _ProfilesTab({required this.service});
+  const _ProfilesTab({required this.service, required this.client});
   final HotspotService service;
+  final RouterOsClient client;
 
   @override
   State<_ProfilesTab> createState() => _ProfilesTabState();
@@ -810,6 +811,10 @@ class _ProfilesTabState extends State<_ProfilesTab> {
   final _days = TextEditingController(text: '1');
   final _hours = TextEditingController(text: '0');
   final _shared = TextEditingController(text: '1');
+  final _parentQueue = TextEditingController();
+  String _expiryMode = 'disable';
+  bool _lockUserMac = false;
+  List<String> _queueNames = [];
   late Future<List<HotspotProfile>> _future;
   bool _saving = false;
 
@@ -817,10 +822,20 @@ class _ProfilesTabState extends State<_ProfilesTab> {
   void initState() {
     super.initState();
     _future = widget.service.fetchProfiles();
+    unawaited(_loadQueueNames());
+  }
+
+  Future<void> _loadQueueNames() async {
+    try {
+      final rows = await widget.client.command('/queue/simple/print', args: const {'.proplist': 'name'});
+      if (!mounted) return;
+      setState(() => _queueNames = rows.map((r) => r['name'] ?? '').where((n) => n.isNotEmpty).toSet().toList()..sort());
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _parentQueue.dispose();
     _name.dispose();
     _rateLimit.dispose();
     _days.dispose();
@@ -841,6 +856,9 @@ class _ProfilesTabState extends State<_ProfilesTab> {
         validityDays: int.parse(_days.text.trim()),
         validityHours: int.parse(_hours.text.trim()),
         sharedUsers: int.parse(_shared.text.trim()),
+        expiryMode: _expiryMode,
+        lockUserMac: _lockUserMac,
+        parentQueue: _parentQueue.text.trim(),
       );
       if (!mounted) return;
       _showSnack(context, 'تم إنشاء / تحديث الباقة مع سكريبت الصلاحية.');
@@ -946,6 +964,37 @@ class _ProfilesTabState extends State<_ProfilesTab> {
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         validator: (value) => _boundedInteger(value, 'عدد المستخدمين', 1, 1000),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _expiryMode,
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF1B2230),
+                        decoration: _decoration(hint: 'سلوك الكرت عند انتهاء الصلاحية'),
+                        items: const [
+                          DropdownMenuItem(value: 'disable', child: Text('إيقاف الكرت عند الانتهاء')),
+                          DropdownMenuItem(value: 'remove', child: Text('حذف الكرت عند الانتهاء')),
+                        ],
+                        onChanged: (value) { if (value != null) setState(() => _expiryMode = value); },
+                      ),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _lockUserMac,
+                        onChanged: (value) => setState(() => _lockUserMac = value ?? false),
+                        title: const Text('قفل الكرت على أول MAC يسجّل الدخول', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        activeColor: _hsAccent,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      DropdownButtonFormField<String>(
+                        value: _parentQueue.text,
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF1B2230),
+                        decoration: _decoration(hint: 'Parent Queue (اختياري)'),
+                        items: [
+                          const DropdownMenuItem(value: '', child: Text('بدون طابور أب')),
+                          ..._queueNames.map((name) => DropdownMenuItem(value: name, child: Text(name, overflow: TextOverflow.ellipsis))),
+                        ],
+                        onChanged: (value) { if (value != null) { _parentQueue.text = value; setState(() {}); } },
                       ),
                       const SizedBox(height: 14),
                       SizedBox(
