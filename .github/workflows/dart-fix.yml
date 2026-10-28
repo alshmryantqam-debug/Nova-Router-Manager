@@ -1,0 +1,49 @@
+name: Dart Auto Fix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nova-dart-fix-main
+  cancel-in-progress: false
+
+jobs:
+  dart-fix:
+    name: Apply Dart fixes and format
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Apply supported Dart fixes
+        run: dart fix --apply
+      - name: Format Dart files
+        run: dart format .
+      - name: Verify diff
+        run: git diff --check
+      - name: Commit and push changes to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u
+          if git diff --cached --quiet; then
+            echo "No Dart fixes or formatting changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: apply Dart fixes and formatting"
+          git push origin HEAD:main
