@@ -25,9 +25,9 @@ class _UnifiedActiveUsersScreenState extends ConsumerState<UnifiedActiveUsersScr
  Future<List<Map<String,String>>> _read(RouterOsClient c,String path,String props) async {try{return await c.command(path,args:{'.proplist':props});}catch(_){return <Map<String,String>>[];}}
  Future<void> _refresh({bool silent=false}) async {
   final c=ref.read(activeRouterClientProvider);
-  if(c==null){if(mounted)setState(()=>{_loading=false,_error='اتصل براوتر أولاً.'});return;}
+  if(c==null){if(mounted)setState(() {_loading=false; _error='اتصل براوتر أولاً.';});return;}
   if(!identical(c,_client))_client=c;
-  if(!silent&&mounted)setState(()=>{_loading=true,_error=null});
+  if(!silent&&mounted)setState(() {_loading=true; _error=null;});
   try{
    final r=await Future.wait<List<Map<String,String>>>([
     _read(c,'/ppp/active/print','.id,name,address,caller-id,uptime,bytes-in,bytes-out'),
@@ -48,10 +48,10 @@ class _UnifiedActiveUsersScreenState extends ConsumerState<UnifiedActiveUsersScr
    for(final q in r[4]){final n=q['name']??'';if(n.isEmpty||usedQueues.contains(n)||n.startsWith('<pppoe-'))continue;final rate=(q['rate']??'0/0').split('/');final bytes=(q['bytes']??'0/0').split('/');
     users.add(_LiveUser(kind:'Simple Queue',name:n,address:q['target']??'',mac:'',comment:q['comment']??'',uptime:'—',rxMbps:rate.length>1?_mbps(rate[1]):0,txMbps:rate.isNotEmpty?_mbps(rate[0]):0,bytes:bytes.fold<int>(0,(sum,v)=>sum+_int(v)),id:q['.id']??'',secretId:'',queueId:q['.id']??'',activeId:''));
    }
-   if(mounted)setState(()=>{_users=users,_loading=false,_error=null});
-  }catch(e){if(mounted)setState(()=>{_loading=false,_error=e.toString()});}
+   if(mounted)setState(() {_users=users; _loading=false; _error=null;});
+  }catch(e){if(mounted)setState(() {_loading=false; _error=e.toString();});}
  }
- Future<void> _act(String label,Future<void> Function(RouterOsClient) fn) async {final c=ref.read(activeRouterClientProvider);if(c==null||_busy)return;setState(()=>{_busy=true,_error=null});try{await fn(c);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$label: تم التنفيذ')));await _refresh(silent:true);}catch(e){if(mounted)setState(()=>_error='$label: $e');}finally{if(mounted)setState(()=>_busy=false);}}
+ Future<void> _act(String label,Future<void> Function(RouterOsClient) fn) async {final c=ref.read(activeRouterClientProvider);if(c==null||_busy)return;setState(() {_busy=true; _error=null;});try{await fn(c);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$label: تم التنفيذ')));await _refresh(silent:true);}catch(e){if(mounted)setState(()=>_error='$label: $e');}finally{if(mounted)setState(()=>_busy=false);}}
  Future<void> _rate(_LiveUser u) async {
   final ctl=TextEditingController(text:'5M/5M');final v=await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(backgroundColor:_panel,title:Text('تحديد السرعة: ${u.name}',style:const TextStyle(color:Colors.white)),content:Column(mainAxisSize:MainAxisSize.min,children:[Wrap(spacing:5,children:['2M/2M','5M/5M','10M/10M'].map((x)=>ActionChip(label:Text(x),onPressed:()=>Navigator.pop(ctx,x))).toList()),TextField(controller:ctl,style:const TextStyle(color:Colors.white),decoration:const InputDecoration(hintText:'Upload/Download'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,ctl.text.trim()),child:const Text('تطبيق'))]));ctl.dispose();if(v==null||v.isEmpty)return;if(!RegExp(r'^\d+(?:\.\d+)?[kMGT]?/\d+(?:\.\d+)?[kMGT]?$').hasMatch(v)){setState(()=>_error='صيغة السرعة غير صحيحة');return;}
   await _act('تحديد السرعة',(c)async{if(u.queueId.isNotEmpty){await c.command('/queue/simple/set',args:{'.id':u.queueId,'max-limit':v});}else if(u.kind=='Hotspot'&&u.secretId.isNotEmpty){final rows=await c.command('/ip/hotspot/user/print',args:{'.proplist':'profile','numbers':u.secretId});final p=rows.isEmpty?'':rows.first['profile']??'';final profiles=await c.command('/ip/hotspot/user/profile/print',args:{'.proplist':'.id,name','?name':p});if(profiles.isEmpty)throw StateError('لم يتم العثور على باقة المستخدم');await c.command('/ip/hotspot/user/profile/set',args:{'.id':profiles.first['.id']??'','rate-limit':v});}else{throw StateError('لا يوجد طابور قابل لتغيير السرعة');}});
