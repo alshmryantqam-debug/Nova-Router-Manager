@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths-ignore:
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +17,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Android release APK
+    name: Build Nova Android APKs
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -28,10 +30,6 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Show toolchain versions
-        run: |
-          flutter --version
-          dart --version
       - name: Ensure Android platform exists
         shell: bash
         run: |
@@ -45,34 +43,81 @@ jobs:
           chmod +x android/gradlew
           after="$(sha256sum pubspec.yaml lib/main.dart | sha256sum | cut -d' ' -f1)"
           test "$before" = "$after" || { echo "::error::flutter create changed app source"; exit 1; }
-      - name: Configure and verify Android network permissions
+      - name: Set Nova Android identity and permissions
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re, sys
-          p = Path("android/app/src/main/AndroidManifest.xml")
-          s = p.read_text(encoding="utf-8")
-          if not re.search(r'<manifest\b', s) or not re.search(r'<application\b', s):
-              sys.exit("AndroidManifest.xml is missing manifest/application root")
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          s = manifest.read_text(encoding="utf-8")
+          if not re.search(r'<manifest\\b', s) or not re.search(r'<application\\b', s): sys.exit("Android manifest missing root")
           for permission in ("android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"):
-              pat = r'<uses-permission\b[^>]*android:name=["\']' + re.escape(permission) + r'["\'][^>]*/?>'
+              pat = r'<uses-permission\\b[^>]*android:name=["\\']' + re.escape(permission) + r'["\\'][^>]*/?>'
               if not re.search(pat, s):
-                  root = re.search(r'<manifest\b[^>]*>', s)
-                  s = s[:root.end()] + f'\n    <uses-permission android:name="{permission}" />' + s[root.end():]
-          app = re.search(r'<application\b[^>]*>', s)
-          tag = app.group(0)
-          if re.search(r'\bandroid:usesCleartextTraffic\s*=', tag):
-              tag = re.sub(r'\bandroid:usesCleartextTraffic\s*=\s*["\'][^"\']*["\']', 'android:usesCleartextTraffic="true"', tag)
+                  root = re.search(r'<manifest\\b[^>]*>', s)
+                  s = s[:root.end()] + f'\\n    <uses-permission android:name="{permission}" />' + s[root.end():]
+          app = re.search(r'<application\\b[^>]*>', s); tag = app.group(0)
+          if re.search(r'\\bandroid:label\\s*=', tag): tag = re.sub(r'\\bandroid:label\\s*=\\s*["\\'][^"\\']*["\\']', 'android:label="نوڨا (Nova)"', tag)
+          else: tag = tag[:-1] + ' android:label="نوڨا (Nova)">'
+          if re.search(r'\\bandroid:usesCleartextTraffic\\s*=', tag): tag = re.sub(r'\\bandroid:usesCleartextTraffic\\s*=\\s*["\\'][^"\\']*["\\']', 'android:usesCleartextTraffic="true"', tag)
+          else: tag = tag[:-1] + ' android:usesCleartextTraffic="true">'
+          s = s[:app.start()] + tag + s[app.end():]; manifest.write_text(s, encoding="utf-8")
+          for p in Path("android/app/src/main/res").rglob("*.xml"):
+              if p == manifest: continue
+              try: t = p.read_text(encoding="utf-8")
+              except UnicodeDecodeError: continue
+              t = t.replace("TikPlus Ultra", "نوڨا (Nova)").replace("TikPlus", "Nova").replace("tikplus", "nova")
+              if p.name == "strings.xml":
+                  t = re.sub(r'<string name="app_name">.*?</string>', '<string name="app_name">نوڨا (Nova)</string>', t, flags=re.S)
+                  if '<string name="app_name">' not in t: t = t.replace('</resources>', '    <string name="app_name">نوڨا (Nova)</string>\\n</resources>')
+              p.write_text(t, encoding="utf-8")
+          print("Nova identity and Android permissions configured")
+          PY
+      - name: Configure release signing (if all secrets exist)
+        id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" && -n "${ANDROID_KEYSTORE_PASSWORD:-}" && -n "${ANDROID_KEY_ALIAS:-}" && -n "${ANDROID_KEY_PASSWORD:-}" ]]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/nova-upload.jks
+            cat > android/key.properties <<EOF
+          storeFile=app/nova-upload.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Signing secrets are missing. This build uses the debug key and will NOT update an installed APK signed with a different key. Configure all four ANDROID_KEYSTORE_* secrets to publish update-compatible APKs."
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, sys
+          p = Path("android/app/build.gradle.kts"); groovy = False
+          if not p.exists(): p = Path("android/app/build.gradle"); groovy = True
+          if not p.exists(): sys.exit("No Android app Gradle file found")
+          s = p.read_text(encoding="utf-8")
+          if groovy:
+              props = 'def keystoreProperties = new Properties()\\ndef keystorePropertiesFile = rootProject.file("key.properties")\\nif (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }\\n'
+              if "keystorePropertiesFile" not in s: s = props + s
+              if "signingConfigs {" not in s: s = re.sub(r'android\\s*\\{', 'android {\\n signingConfigs { release { if (keystorePropertiesFile.exists()) { storeFile file(keystoreProperties["storeFile"]); storePassword keystoreProperties["storePassword"]; keyAlias keystoreProperties["keyAlias"]; keyPassword keystoreProperties["keyPassword"] } } }', s, count=1)
+              s = re.sub(r'signingConfig\\s+signingConfigs\\.getByName\\(["\\']debug["\\']\\)', 'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug', s)
+              s = re.sub(r'signingConfig\\s*=\\s*signingConfigs\\.debug', 'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug', s)
           else:
-              tag = tag[:-1] + ' android:usesCleartextTraffic="true">'
-          s = s[:app.start()] + tag + s[app.end():]
-          p.write_text(s, encoding="utf-8")
-          assert 'android:usesCleartextTraffic="true"' in re.search(r'<application\b[^>]*>', s).group(0)
-          for permission in ("android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"):
-              assert re.search(r'<uses-permission\b[^>]*android:name=["\']' + re.escape(permission) + r'["\'][^>]*/?>', s)
-          print("Android permissions verified")
+              props = 'import java.util.Properties\\nimport java.io.FileInputStream\\nval keystoreProperties = Properties()\\nval keystorePropertiesFile = rootProject.file("key.properties")\\nif (keystorePropertiesFile.exists()) { FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) } }\\n'
+              if "keystorePropertiesFile" not in s: s = props + s
+              if "signingConfigs {" not in s: s = re.sub(r'android\\s*\\{', 'android {\\n signingConfigs { create("release") { if (keystorePropertiesFile.exists()) { storeFile = file(keystoreProperties["storeFile"] as String); storePassword = keystoreProperties["storePassword"] as String; keyAlias = keystoreProperties["keyAlias"] as String; keyPassword = keystoreProperties["keyPassword"] as String } } }', s, count=1)
+              s = re.sub(r'signingConfig\\s*=\\s*signingConfigs\\.getByName\\(["\\']debug["\\']\\)', 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
+              s = re.sub(r'signingConfig\\s*=\\s*signingConfigs\\.debug', 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
+          p.write_text(s, encoding="utf-8"); print(f"Configured conditional signing in {p}")
           PY
       - name: Resolve dependencies
         run: flutter pub get
@@ -80,33 +125,64 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Run Flutter tests
         run: flutter test
-      - name: Build release APK
-        run: flutter build apk --release --no-tree-shake-icons
-      - name: Verify APK
-        run: test -s build/app/outputs/flutter-apk/app-release.apk
-      - name: Upload APK artifact
+      - name: Build universal release APK
+        run: |
+          flutter build apk --release --no-tree-shake-icons --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }}
+          mkdir -p build/nova-release
+          cp build/app/outputs/flutter-apk/app-release.apk build/nova-release/Nova-universal.apk
+      - name: Build split-per-ABI release APKs
+        run: |
+          flutter build apk --release --split-per-abi --no-tree-shake-icons --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }}
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/nova-release/Nova-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk build/nova-release/Nova-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk build/nova-release/Nova-x86_64.apk
+      - name: Rename debug-signed APKs when upload signing is unavailable
+        if: steps.signing.outputs.signed != 'true'
+        run: |
+          mv build/nova-release/Nova-universal.apk build/nova-release/Nova-DEBUG-KEY.apk
+          for f in build/nova-release/Nova-arm64-v8a.apk build/nova-release/Nova-armeabi-v7a.apk build/nova-release/Nova-x86_64.apk; do mv "$f" "${f%.apk}-DEBUG-KEY.apk"; done
+      - name: Build signed Android App Bundle
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          flutter build appbundle --release --no-tree-shake-icons --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }}
+          cp build/app/outputs/bundle/release/app-release.aab build/nova-release/Nova.aab
+      - name: Verify release outputs
+        run: |
+          set -euo pipefail
+          compgen -G 'build/nova-release/*.apk' >/dev/null
+          if [[ "${{ steps.signing.outputs.signed }}" == "true" ]]; then test -s build/nova-release/Nova-universal.apk && test -s build/nova-release/Nova.aab; else test -s build/nova-release/Nova-DEBUG-KEY.apk; fi
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nova-router-manager-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Nova-Android-${{ github.run_number }}
+          path: build/nova-release/*.apk
           if-no-files-found: error
           retention-days: 30
-      - name: Publish rolling latest Release from main
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
+      - name: Upload signed AAB artifact
+        if: steps.signing.outputs.signed == 'true'
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Nova Router Manager — Latest
-          body: |
-            أحدث إصدار تلقائي من الفرع الرئيسي.
-            نزّل app-release.apk من الأصول أدناه.
-          files: build/app/outputs/flutter-apk/app-release.apk
-          make_latest: true
-          fail_on_unmatched_files: true
+          name: Nova-AAB-${{ github.run_number }}
+          path: build/nova-release/Nova.aab
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish rolling nightly Release from main
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete nightly --yes 2>/dev/null || true
+          git push origin :refs/tags/nightly 2>/dev/null || true
+          git tag -f nightly
+          git push origin refs/tags/nightly
+          gh release create nightly build/nova-release/*.apk --prerelease --title "Nova — Nightly" --notes "إصدار تلقائي من main. APK مباشر دون ZIP. إذا كان البناء بمفتاح DEBUG فلن يتحدّث فوق نسخة موقّعة بمفتاح مختلف."
+          if [[ "${{ steps.signing.outputs.signed }}" == "true" ]]; then gh release upload nightly build/nova-release/Nova.aab; fi
       - name: Publish version-tag Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/nova-release/*
           generate_release_notes: true
           fail_on_unmatched_files: true

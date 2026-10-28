@@ -76,7 +76,7 @@ class NovaRouterManagerApp extends StatelessWidget {
     );
 
     return MaterialApp(
-      title: 'Nova Router Manager',
+      title: 'نوڨا (Nova)',
       debugShowCheckedModeBanner: false,
       theme: theme,
       darkTheme: theme,
