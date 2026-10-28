@@ -646,11 +646,47 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
         _error = null;
       });
     } catch (error) {
+      var reportedError = error;
+      if (_restApi) {
+        try {
+          if (client != null) {
+            await client.close();
+            client = null;
+          }
+          final apiProbe = RouterOsClient(
+            host: _host.text.trim(),
+            port: _ssl ? 8729 : 8728,
+            username: _username.text.trim(),
+            password: _password.text,
+            useSsl: _ssl,
+            useRestApi: false,
+            autoReconnect: false,
+          );
+          try {
+            await apiProbe.connect();
+            final rows = await apiProbe.command('/system/resource/print');
+            final version = rows.isEmpty ? '' : (rows.first['version'] ?? '').trim();
+            if (version.startsWith('6.')) {
+              reportedError = const RouterOsException(
+                'RouterOS v6 لا يدعم REST API. أوقف REST واستخدم API على 8728 أو API-SSL على 8729.',
+              );
+            } else if (version.isNotEmpty) {
+              reportedError = RouterOsException(
+                'تم الوصول إلى RouterOS $version عبر API، لكن REST لم يتصل. تحقق من خدمة www/www-ssl والمنفذ والشهادة، أو استخدم API. التفاصيل: $error',
+              );
+            }
+          } finally {
+            await apiProbe.close();
+          }
+        } catch (_) {
+          // Keep the original REST failure when the API probe is also unavailable.
+        }
+      }
       if (!mounted) return;
       setState(() {
         _testedFingerprint = null;
         _testSummary = null;
-        _error = _friendlyError(error);
+        _error = _friendlyError(reportedError);
       });
     } finally {
       if (client != null) await client.close();
