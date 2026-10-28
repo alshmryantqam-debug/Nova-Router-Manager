@@ -52,16 +52,16 @@ jobs:
           import re, sys
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           s = manifest.read_text(encoding="utf-8")
-          if not re.search(r'<manifest\\b', s) or not re.search(r'<application\\b', s): sys.exit("Android manifest missing root")
+          if not re.search(r'<manifest\b', s) or not re.search(r'<application\b', s): sys.exit("Android manifest missing root")
           for permission in ("android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE"):
-              pat = r'<uses-permission\\b[^>]*android:name=["\\']' + re.escape(permission) + r'["\\'][^>]*/?>'
+              pat = r'<uses-permission\b[^>]*android:name=["\']' + re.escape(permission) + r'["\'][^>]*/?>'
               if not re.search(pat, s):
-                  root = re.search(r'<manifest\\b[^>]*>', s)
-                  s = s[:root.end()] + f'\\n    <uses-permission android:name="{permission}" />' + s[root.end():]
-          app = re.search(r'<application\\b[^>]*>', s); tag = app.group(0)
-          if re.search(r'\\bandroid:label\\s*=', tag): tag = re.sub(r'\\bandroid:label\\s*=\\s*["\\'][^"\\']*["\\']', 'android:label="نوڨا (Nova)"', tag)
+                  root = re.search(r'<manifest\b[^>]*>', s)
+                  s = s[:root.end()] + f'\n    <uses-permission android:name="{permission}" />' + s[root.end():]
+          app = re.search(r'<application\b[^>]*>', s); tag = app.group(0)
+          if re.search(r'\bandroid:label\s*=', tag): tag = re.sub(r'\bandroid:label\s*=\s*["\'][^"\']*["\']', 'android:label="نوڨا (Nova)"', tag)
           else: tag = tag[:-1] + ' android:label="نوڨا (Nova)">'
-          if re.search(r'\\bandroid:usesCleartextTraffic\\s*=', tag): tag = re.sub(r'\\bandroid:usesCleartextTraffic\\s*=\\s*["\\'][^"\\']*["\\']', 'android:usesCleartextTraffic="true"', tag)
+          if re.search(r'\bandroid:usesCleartextTraffic\s*=', tag): tag = re.sub(r'\bandroid:usesCleartextTraffic\s*=\s*["\'][^"\']*["\']', 'android:usesCleartextTraffic="true"', tag)
           else: tag = tag[:-1] + ' android:usesCleartextTraffic="true">'
           s = s[:app.start()] + tag + s[app.end():]; manifest.write_text(s, encoding="utf-8")
           for p in Path("android/app/src/main/res").rglob("*.xml"):
@@ -71,7 +71,7 @@ jobs:
               t = t.replace("TikPlus Ultra", "نوڨا (Nova)").replace("TikPlus", "Nova").replace("tikplus", "nova")
               if p.name == "strings.xml":
                   t = re.sub(r'<string name="app_name">.*?</string>', '<string name="app_name">نوڨا (Nova)</string>', t, flags=re.S)
-                  if '<string name="app_name">' not in t: t = t.replace('</resources>', '    <string name="app_name">نوڨا (Nova)</string>\\n</resources>')
+                  if '<string name="app_name">' not in t: t = t.replace('</resources>', '    <string name="app_name">نوڨا (Nova)</string>\n</resources>')
               p.write_text(t, encoding="utf-8")
           print("Nova identity and Android permissions configured")
           PY
@@ -106,17 +106,17 @@ jobs:
           if not p.exists(): sys.exit("No Android app Gradle file found")
           s = p.read_text(encoding="utf-8")
           if groovy:
-              props = 'def keystoreProperties = new Properties()\\ndef keystorePropertiesFile = rootProject.file("key.properties")\\nif (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }\\n'
+              props = 'def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }\n'
               if "keystorePropertiesFile" not in s: s = props + s
-              if "signingConfigs {" not in s: s = re.sub(r'android\\s*\\{', 'android {\\n signingConfigs { release { if (keystorePropertiesFile.exists()) { storeFile file(keystoreProperties["storeFile"]); storePassword keystoreProperties["storePassword"]; keyAlias keystoreProperties["keyAlias"]; keyPassword keystoreProperties["keyPassword"] } } }', s, count=1)
-              s = re.sub(r'signingConfig\\s+signingConfigs\\.getByName\\(["\\']debug["\\']\\)', 'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug', s)
-              s = re.sub(r'signingConfig\\s*=\\s*signingConfigs\\.debug', 'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug', s)
+              if "signingConfigs {" not in s: s = re.sub(r'android\s*\{', 'android {\n signingConfigs { release { if (keystorePropertiesFile.exists()) { storeFile file(keystoreProperties["storeFile"]); storePassword keystoreProperties["storePassword"]; keyAlias keystoreProperties["keyAlias"]; keyPassword keystoreProperties["keyPassword"] } } }', s, count=1)
+              s = re.sub(r'signingConfig\s+signingConfigs\.getByName\(["\']debug["\']\)', 'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug', s)
+              s = re.sub(r'signingConfig\s*=\s*signingConfigs\.debug', 'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug', s)
           else:
-              props = 'import java.util.Properties\\nimport java.io.FileInputStream\\nval keystoreProperties = Properties()\\nval keystorePropertiesFile = rootProject.file("key.properties")\\nif (keystorePropertiesFile.exists()) { FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) } }\\n'
+              props = 'import java.util.Properties\nimport java.io.FileInputStream\nval keystoreProperties = Properties()\nval keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) { FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) } }\n'
               if "keystorePropertiesFile" not in s: s = props + s
-              if "signingConfigs {" not in s: s = re.sub(r'android\\s*\\{', 'android {\\n signingConfigs { create("release") { if (keystorePropertiesFile.exists()) { storeFile = file(keystoreProperties["storeFile"] as String); storePassword = keystoreProperties["storePassword"] as String; keyAlias = keystoreProperties["keyAlias"] as String; keyPassword = keystoreProperties["keyPassword"] as String } } }', s, count=1)
-              s = re.sub(r'signingConfig\\s*=\\s*signingConfigs\\.getByName\\(["\\']debug["\\']\\)', 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
-              s = re.sub(r'signingConfig\\s*=\\s*signingConfigs\\.debug', 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
+              if "signingConfigs {" not in s: s = re.sub(r'android\s*\{', 'android {\n signingConfigs { create("release") { if (keystorePropertiesFile.exists()) { storeFile = file(keystoreProperties["storeFile"] as String); storePassword = keystoreProperties["storePassword"] as String; keyAlias = keystoreProperties["keyAlias"] as String; keyPassword = keystoreProperties["keyPassword"] as String } } }', s, count=1)
+              s = re.sub(r'signingConfig\s*=\s*signingConfigs\.getByName\(["\']debug["\']\)', 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
+              s = re.sub(r'signingConfig\s*=\s*signingConfigs\.debug', 'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")', s)
           p.write_text(s, encoding="utf-8"); print(f"Configured conditional signing in {p}")
           PY
       - name: Resolve dependencies
