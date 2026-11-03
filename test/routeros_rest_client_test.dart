@@ -6,8 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_router_manager/core/network/routeros_client.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   test('REST mutations send RouterOS arguments as a JSON body', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final mutation = Completer<Map<String, String>>();
