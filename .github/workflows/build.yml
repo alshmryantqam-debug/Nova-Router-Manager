@@ -43,6 +43,35 @@ jobs:
           chmod +x android/gradlew
           after="$(sha256sum pubspec.yaml lib/main.dart | sha256sum | cut -d' ' -f1)"
           test "$before" = "$after" || { echo "::error::flutter create changed app source"; exit 1; }
+      - name: Install Android NDK with corruption-safe retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          ndk_version="28.2.13676358"
+          test -x "$sdkmanager" || { echo "::error::Android sdkmanager was not found"; exit 1; }
+          if [[ -f "$sdk_root/ndk/$ndk_version/source.properties" ]]; then
+            echo "Android NDK $ndk_version is already installed"
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            echo "Installing Android NDK $ndk_version (attempt $attempt/3)"
+            if yes | "$sdkmanager" --install "ndk;$ndk_version" --channel=0; then
+              if [[ -f "$sdk_root/ndk/$ndk_version/source.properties" ]]; then
+                echo "Android NDK $ndk_version installed and verified"
+                exit 0
+              fi
+            fi
+            echo "::warning::NDK installation attempt $attempt failed; clearing incomplete package files before retry"
+            rm -rf "$sdk_root/ndk/$ndk_version"
+            if [[ -d "$sdk_root/.temp" ]]; then
+              find "$sdk_root/.temp" -maxdepth 1 -type f -delete
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "::error::Could not install a verified Android NDK after 3 attempts"
+          exit 1
       - name: Set Nova Android identity and permissions
         shell: bash
         run: |
