@@ -57,7 +57,7 @@ jobs:
           fi
           for attempt in 1 2 3; do
             echo "Installing Android NDK $ndk_version (attempt $attempt/3)"
-            if yes | "$sdkmanager" --install "ndk;$ndk_version" --channel=0; then
+            if "$sdkmanager" --install "ndk;$ndk_version" --channel=0; then
               if [[ -f "$sdk_root/ndk/$ndk_version/source.properties" ]]; then
                 echo "Android NDK $ndk_version installed and verified"
                 exit 0
