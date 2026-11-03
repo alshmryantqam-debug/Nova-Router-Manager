@@ -622,12 +622,23 @@ class RouterOsClient {
     final webPort = port == 8728 ? (useSsl ? 443 : 80) : port;
     final uri = Uri(scheme: scheme, host: host, port: webPort, path: '/rest${_restResource(resource)}');
     final credentials = base64Encode(utf8.encode('$username:$password'));
-    final request = await (_restHttpClient ?? HttpClient())
-        .openUrl(method, uri);
+    final request = await (_restHttpClient ?? HttpClient()).openUrl(method, uri);
     request.headers.set(HttpHeaders.authorizationHeader, 'Basic $credentials');
     request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+
+    // RouterOS REST mutations require a JSON request body. Previously the
+    // arguments were accepted by this method but silently discarded.
+    if (args.isNotEmpty && method != 'GET' && method != 'DELETE') {
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode(args));
+    }
+
     final response = await request.close();
-    return http.Response.bytes(await response.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk)), response.statusCode);
+    final bytes = await response.fold<List<int>>(
+      <int>[],
+      (all, chunk) => all..addAll(chunk),
+    );
+    return http.Response.bytes(bytes, response.statusCode);
   }
 
   Future<void> close() async {
