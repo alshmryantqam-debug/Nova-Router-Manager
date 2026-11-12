@@ -168,11 +168,11 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
     final result = await showDialog<Map<String, String>>(context: context, builder: (dialogContext) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
         backgroundColor: _interfacePanel,
-        title: const Text('إضافة VLAN', style: TextStyle(color: Colors.white)),
+        title: const Text('إضافة شبكة VLAN', style: TextStyle(color: Colors.white)),
         content: Form(key: formKey, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           TextFormField(controller: nameC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'اسم VLAN'),
             validator: (v) => (v == null || v.trim().isEmpty) ? 'الاسم مطلوب' : null),
-          TextFormField(controller: idC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'VLAN ID (1–4094)'),
+          TextFormField(controller: idC, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'معرّف VLAN (1–4094)'),
             validator: (v) { final n = int.tryParse(v ?? ''); return n == null || n < 1 || n > 4094 ? 'أدخل رقماً من 1 إلى 4094' : null; }),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(value: parent, dropdownColor: _interfacePanel, decoration: const InputDecoration(labelText: 'المنفذ الأب'),
@@ -208,7 +208,7 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
           DropdownButtonFormField<String>(value: bridge, dropdownColor: _interfacePanel, decoration: const InputDecoration(labelText: 'نقل إلى بريدج'),
             items: _bridges.map((b) => DropdownMenuItem(value: b['name'], child: Text(b['name'] ?? '—'))).toList(),
             onChanged: (v) => setDialogState(() => bridge = v)),
-          TextField(controller: horizonC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'Horizon (فارغ لإلغاء العزل)')),
+          TextField(controller: horizonC, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'قيمة العزل (اتركها فارغة لإلغاء العزل)')),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
@@ -229,10 +229,10 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
     }
     return Scaffold(
       backgroundColor: _interfaceBg,
-      appBar: AppBar(backgroundColor: _interfaceBg, foregroundColor: Colors.white, title: const Text('المنافذ والفايبر و VLAN'),
+      appBar: AppBar(backgroundColor: _interfaceBg, foregroundColor: Colors.white, title: const Text('المنافذ والألياف الضوئية وVLAN'),
         actions: [IconButton(onPressed: _loading ? null : _refresh, icon: const Icon(Icons.refresh_rounded))],
         bottom: TabBar(controller: _tabs, isScrollable: true, indicatorColor: _interfaceAccent, labelColor: Colors.white, unselectedLabelColor: _interfaceMuted,
-          tabs: const [Tab(icon: Icon(Icons.settings_ethernet), text: 'المنافذ والفايبر'), Tab(icon: Icon(Icons.lan), text: 'VLAN'), Tab(icon: Icon(Icons.hub), text: 'Bridges')])),
+          tabs: const [Tab(icon: Icon(Icons.settings_ethernet), text: 'المنافذ والفايبر'), Tab(icon: Icon(Icons.lan), text: 'VLAN'), Tab(icon: Icon(Icons.hub), text: 'الجسور الشبكية')])),
       body: _loading ? const Center(child: CircularProgressIndicator(color: _interfaceAccent)) : _error != null
         ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.cloud_off, color: _interfaceMuted, size: 40), const SizedBox(height: 12),
