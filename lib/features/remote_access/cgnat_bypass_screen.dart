@@ -105,7 +105,7 @@ class _CgnatBypassScreenState extends ConsumerState<CgnatBypassScreen> {
   Future<void> _remove(ReverseVpnResult t) async {
     final s = _service; if (s == null || _busy) return;
     final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      backgroundColor: _panel, title: const Text('حذف نفق VPN؟'),
+      backgroundColor: _panel, title: const Text('هل تريد حذف نفق VPN؟'),
       content: Text('سيُحذف ' + t.name + ' وجدول الاستعادة.'),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف'))])) ?? false;
@@ -130,7 +130,7 @@ class _CgnatBypassScreenState extends ConsumerState<CgnatBypassScreen> {
     return DefaultTabController(length: 2, child: Scaffold(backgroundColor: _bg,
       appBar: AppBar(backgroundColor: _bg, foregroundColor: Colors.white, title: const Text('أنفاق CGNAT وStarlink'),
         actions: [IconButton(onPressed: _busy ? null : () => _refresh(), icon: const Icon(Icons.refresh, color: _accent))],
-        bottom: const TabBar(indicatorColor: _accent, tabs: [Tab(icon: Icon(Icons.hub_rounded), text: 'ZeroTier One'), Tab(icon: Icon(Icons.vpn_lock_rounded), text: 'Reverse VPN')])),
+        bottom: const TabBar(indicatorColor: _accent, tabs: [Tab(icon: Icon(Icons.hub_rounded), text: 'ZeroTier One'), Tab(icon: Icon(Icons.vpn_lock_rounded), text: 'VPN عكسي')])),
       body: Column(children: [
         if (_error != null) Container(width: double.infinity, margin: const EdgeInsets.all(10), padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(color: _red.withOpacity(.1), border: Border.all(color: _red.withOpacity(.4)), borderRadius: BorderRadius.circular(10)),
@@ -138,13 +138,13 @@ class _CgnatBypassScreenState extends ConsumerState<CgnatBypassScreen> {
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator(color: _accent)) : TabBarView(children: [_zeroTierTab(), _reverseTab()]))])));
   }
   Widget _zeroTierTab() => ListView(padding: const EdgeInsets.all(13), children: [
-    _card('ربط ZeroTier بضغطة زر', Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    _card('إعداد اتصال ZeroTier بضغطة واحدة', Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const Text('وصول خارجي خلف CGNAT دون فتح منافذ الإدارة على الإنترنت العام. يلزم تثبيت حزمة ZeroTier المتوافقة واعتماد الراوتر في ZeroTier Central إذا كانت الشبكة خاصة.',
         style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5)),
       const SizedBox(height: 12),
       TextField(controller: _network, textDirection: TextDirection.ltr, autocorrect: false, enableSuggestions: false,
         inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9a-fA-F]')), LengthLimitingTextInputFormatter(16)],
-        decoration: _dec('Network ID (16 خانة)', hint: '8056c2e21c000001')),
+        decoration: _dec('معرّف الشبكة (16 خانة)', hint: '8056c2e21c000001')),
       const SizedBox(height: 10), SizedBox(height: 48, child: FilledButton.icon(onPressed: _busy ? null : _connectZt,
         icon: _busy ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.bolt),
         label: Text(_busy ? 'جارٍ إنشاء النفق...' : 'ربط وإنشاء النفق فوراً')))])),
@@ -162,7 +162,7 @@ class _CgnatBypassScreenState extends ConsumerState<CgnatBypassScreen> {
       style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.5))) ]);
 
   Widget _reverseTab() => ListView(padding: const EdgeInsets.all(13), children: [
-    _card('Reverse VPN Client', Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    _card('عميل VPN عكسي', Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const Text('اتصال صادر من الراوتر إلى خادم VPN خارجي يملك Public IP. أنشئ حساب العميل على الخادم مسبقاً.',
         style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5)),
       const SizedBox(height: 10),
