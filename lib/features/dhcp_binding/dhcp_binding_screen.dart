@@ -18,8 +18,8 @@ class DhcpBindingScreen extends ConsumerWidget {
     if (client == null) return const Center(child: Text('اتصل براوتر أولًا.'));
     return DefaultTabController(length: 2, child: Column(children: [
       const TabBar(isScrollable: true, tabs: [
-        Tab(icon: Icon(Icons.router_rounded), text: 'DHCP Leases'),
-        Tab(icon: Icon(Icons.rule_rounded), text: 'Hotspot IP Bindings'),
+        Tab(icon: Icon(Icons.router_rounded), text: 'عقود DHCP'),
+        Tab(icon: Icon(Icons.rule_rounded), text: 'ربط عناوين IP للهوتسبوت'),
       ]),
       Expanded(child: TabBarView(children: [
         _Leases(client: client), _Bindings(client: client),
@@ -76,7 +76,7 @@ class _LeasesState extends State<_Leases> {
     final controller = TextEditingController(text: row['rate-limit'] ?? '');
     final result = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('تحديد سرعة الجهاز'),
-      content: TextField(controller: controller, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'Rate limit', hintText: '5M/20M')),
+      content: TextField(controller: controller, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'تحديد السرعة', hintText: '5M/20M')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
         FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('حفظ')),
@@ -97,7 +97,7 @@ class _LeasesState extends State<_Leases> {
     final query = _search.text.trim().toLowerCase();
     final rows = _rows.where((r) => query.isEmpty || [r['address'] ?? '',r['mac-address'] ?? '',r['host-name'] ?? '',r['comment'] ?? ''].any((v) => v.toLowerCase().contains(query))).toList();
     return RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: [
-      _Header(title: 'DHCP Leases', count: _rows.length, refresh: () => _load()),
+      _Header(title: 'عقود DHCP', count: _rows.length, refresh: () => _load()),
       TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث بالاسم أو IP أو MAC')),
       const SizedBox(height: 8),
       if (_error != null) Text(_error!, style: const TextStyle(color: _red)),
@@ -159,19 +159,19 @@ class _BindingsState extends State<_Bindings> {
     final values = await showDialog<Map<String,String>>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, refresh) => AlertDialog(
       title: const Text('إضافة IP Binding'),
       content: SingleChildScrollView(child: Form(key: formKey, child: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextFormField(controller: mac, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'MAC Address'), validator: (v) {
+        TextFormField(controller: mac, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'عنوان MAC'), validator: (v) {
           final s = (v ?? '').trim(); if (s.isNotEmpty && !RegExp(r'^(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$').hasMatch(s)) return 'صيغة MAC غير صحيحة';
           if (s.isEmpty && ip.text.trim().isEmpty) return 'أدخل MAC أو IP'; return null;
         }),
-        TextFormField(controller: ip, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'IP Address'), validator: (v) {
+        TextFormField(controller: ip, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'عنوان IP'), validator: (v) {
           final s = (v ?? '').trim(); if (s.isNotEmpty && !RegExp(r'^[0-9a-fA-F:.]+(?:/\d{1,3})?$').hasMatch(s)) return 'صيغة IP غير صحيحة';
           if (s.isEmpty && mac.text.trim().isEmpty) return 'أدخل IP أو MAC'; return null;
         }),
-        TextField(controller: server, decoration: const InputDecoration(labelText: 'Hotspot Server (اختياري)')),
+        TextField(controller: server, decoration: const InputDecoration(labelText: 'خادم الهوتسبوت (اختياري)')),
         DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'النوع'), items: const [
-          DropdownMenuItem(value: 'bypassed', child: Text('Bypassed — تخطي الدخول')),
-          DropdownMenuItem(value: 'blocked', child: Text('Blocked — حظر')),
-          DropdownMenuItem(value: 'regular', child: Text('Regular — عادي')),
+          DropdownMenuItem(value: 'bypassed', child: Text('مستثنى — تجاوز صفحة الدخول')),
+          DropdownMenuItem(value: 'blocked', child: Text('محظور')),
+          DropdownMenuItem(value: 'regular', child: Text('عادي')),
         ], onChanged: (v) { if (v != null) refresh(() => type = v); }),
         TextField(controller: comment, decoration: const InputDecoration(labelText: 'ملاحظة')),
       ]))),
@@ -227,7 +227,7 @@ class _BindingsState extends State<_Bindings> {
     if (_loading && _rows.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_error != null && _rows.isEmpty) return _Retry(title: 'تعذر تحميل IP Bindings', error: _error!, retry: () => _load());
     return RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: [
-      _Header(title: 'Hotspot IP Bindings', count: _rows.length, refresh: () => _load(), add: _add),
+      _Header(title: 'ربط عناوين IP للهوتسبوت', count: _rows.length, refresh: () => _load(), add: _add),
       if (_error != null) Text(_error!, style: const TextStyle(color: _red)),
       if (_rows.isEmpty) const Text('لا توجد قواعد. استخدم + لإضافة Bypassed أو Blocked أو Regular.', style: TextStyle(color: _muted)),
       ..._rows.map((r) {
