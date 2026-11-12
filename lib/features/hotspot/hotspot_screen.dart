@@ -54,12 +54,12 @@ class HotspotWorkspaceConnected extends StatelessWidget {
               labelColor: Colors.white,
               unselectedLabelColor: _hsMuted,
               tabs: [
-                Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'Active'),
-                Tab(icon: Icon(Icons.confirmation_number_rounded, size: 18), text: 'Generate'),
-                Tab(icon: Icon(Icons.style_rounded, size: 18), text: 'Users'),
-                Tab(icon: Icon(Icons.layers_rounded, size: 18), text: 'Profiles'),
-                Tab(icon: Icon(Icons.payments_outlined, size: 18), text: 'Sales'),
-                Tab(icon: Icon(Icons.devices_other_rounded, size: 18), text: 'Hosts & Cookies'),
+                Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'النشطون'),
+                Tab(icon: Icon(Icons.confirmation_number_rounded, size: 18), text: 'إنشاء البطاقات'),
+                Tab(icon: Icon(Icons.style_rounded, size: 18), text: 'المستخدمون'),
+                Tab(icon: Icon(Icons.layers_rounded, size: 18), text: 'الباقات'),
+                Tab(icon: Icon(Icons.payments_outlined, size: 18), text: 'المبيعات'),
+                Tab(icon: Icon(Icons.devices_other_rounded, size: 18), text: 'الأجهزة والجلسات'),
               ],
             ),
           ),
@@ -208,7 +208,7 @@ class _GenerateTabState extends State<_GenerateTab> {
   final _prefix = TextEditingController(text: 'NOVA');
   final _limitGb = TextEditingController(text: '0');
   final _limitUptime = TextEditingController();
-  final _networkName = TextEditingController(text: 'NOVA HOTSPOT');
+  final _networkName = TextEditingController(text: 'الهوتسبوت — نوفا');
   final _portalUrl = TextEditingController();
   final _price = TextEditingController();
   final _batchNote = TextEditingController();
@@ -773,7 +773,7 @@ class _HostsCookiesTabState extends State<_HostsCookiesTab> {
       Row(children: [Icon(icon, color: _hsAccent), const SizedBox(width: 8), Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))), Text('${rows.length}', style: const TextStyle(color: _hsBlue))]),
       if (rows.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(empty, style: const TextStyle(color: _hsMuted))),
       ...rows.map((r) => ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text(r['user'] ?? r['mac-address'] ?? r['address'] ?? 'جهاز', style: const TextStyle(color: Colors.white, fontSize: 12)), subtitle: Text([r['address'], r['mac-address'], r['server'], r['expires']].whereType<String>().where((v) => v.isNotEmpty).join(' · '), style: const TextStyle(color: _hsMuted, fontSize: 10)), trailing: IconButton(onPressed: _busy || (r['.id'] ?? '').isEmpty ? null : () async {
-        final isCookie = title.contains('Cookies');
+        final isCookie = title.contains('ملفات الارتباط');
         try { await widget.client.verifiedCommand(isCookie ? '/ip/hotspot/cookie/remove' : '/ip/hotspot/host/remove', args: {'.id': r['.id']!}); _reload(); }
         catch(e) { if (mounted) _showSnack(context, _errorText(e), isError: true); }
       }, icon: const Icon(Icons.delete_outline, color: _hsRed)))),
@@ -786,11 +786,11 @@ class _HostsCookiesTabState extends State<_HostsCookiesTab> {
       if (snapshot.hasError && !snapshot.hasData) return _HotspotError(message: _errorText(snapshot.error!), onRetry: _reload);
       final data = snapshot.data ?? ( <Map<String,String>>[], <Map<String,String>>[] );
       return RefreshIndicator(color: _hsAccent, onRefresh: () async { final f = _load(); setState(() => _future = f); await f; }, child: ListView(padding: const EdgeInsets.all(14), children: [
-        _TabSummary(title: 'Hosts & Cookies', subtitle: 'أجهزة الهوتسبوت قبل الدخول والجلسات المحفوظة', value: '${data.$1.length + data.$2.length}', icon: Icons.devices_other_rounded, color: _hsBlue, onRefresh: _reload),
+        _TabSummary(title: 'الأجهزة والجلسات', subtitle: 'أجهزة الهوتسبوت قبل الدخول والجلسات المحفوظة', value: '${data.$1.length + data.$2.length}', icon: Icons.devices_other_rounded, color: _hsBlue, onRefresh: _reload),
         const SizedBox(height: 10),
         SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _busy ? null : _clearAll, icon: const Icon(Icons.cleaning_services_rounded), label: Text(_busy ? 'جارٍ المسح...' : 'مسح جميع Hosts وCookies'))),
-        _section('Hosts · أجهزة قبل تسجيل الدخول', Icons.router_rounded, data.$1, 'لا توجد أجهزة معلقة.'),
-        _section('Cookies · جلسات محفوظة', Icons.cookie_rounded, data.$2, 'لا توجد Cookies محفوظة.'),
+        _section('الأجهزة التي لم تسجّل الدخول', Icons.router_rounded, data.$1, 'لا توجد أجهزة معلقة.'),
+        _section('جلسات الدخول المحفوظة', Icons.cookie_rounded, data.$2, 'لا توجد Cookies محفوظة.'),
       ]));
     },
   );
@@ -990,7 +990,7 @@ class _ProfilesTabState extends State<_ProfilesTab> {
                         value: _parentQueue.text,
                         isExpanded: true,
                         dropdownColor: const Color(0xFF1B2230),
-                        decoration: _decoration(hint: 'Parent Queue (اختياري)'),
+                        decoration: _decoration(hint: 'الطابور الأب (اختياري)'),
                         items: [
                           const DropdownMenuItem(value: '', child: Text('بدون طابور أب')),
                           ..._queueNames.map((name) => DropdownMenuItem(value: name, child: Text(name, overflow: TextOverflow.ellipsis))),
@@ -1097,10 +1097,10 @@ class _ActiveSessionCard extends StatelessWidget {
           ]),
           const SizedBox(height: 13),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            _InfoPill(label: 'Uptime', value: session.uptime, color: _hsBlue),
+            _InfoPill(label: 'مدة الاتصال', value: session.uptime, color: _hsBlue),
             _InfoPill(label: 'RX', value: _formatBytes(session.bytesIn), color: _hsGreen),
             _InfoPill(label: 'TX', value: _formatBytes(session.bytesOut), color: _hsBlue),
-            if (session.profile.isNotEmpty) _InfoPill(label: 'Profile', value: session.profile, color: _hsAccent),
+            if (session.profile.isNotEmpty) _InfoPill(label: 'الباقة', value: session.profile, color: _hsAccent),
           ]),
           if (session.macAddress.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -1113,7 +1113,7 @@ class _ActiveSessionCard extends StatelessWidget {
               onPressed: busy ? null : onKick,
               style: OutlinedButton.styleFrom(foregroundColor: _hsRed, side: BorderSide(color: _hsRed.withOpacity(0.4))),
               icon: busy ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.link_off_rounded, size: 17),
-              label: Text(busy ? 'جارٍ الطرد...' : 'طرد المتصل (Kick)'),
+              label: Text(busy ? 'جارٍ الطرد...' : 'فصل المستخدم المتصل'),
             ),
           ),
         ]),
