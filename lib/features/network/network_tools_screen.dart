@@ -40,9 +40,9 @@ class NetworkToolsWorkspace extends StatelessWidget {
               labelColor: Colors.white,
               unselectedLabelColor: _nMuted,
               tabs: [
-                Tab(icon: Icon(Icons.alt_route_rounded, size: 18), text: 'WAN & Routes Monitor'),
-                Tab(icon: Icon(Icons.security_rounded, size: 18), text: 'Firewall'),
-                Tab(icon: Icon(Icons.network_ping_rounded, size: 18), text: 'Ping & Logs'),
+                Tab(icon: Icon(Icons.alt_route_rounded, size: 18), text: 'مراقبة WAN والمسارات'),
+                Tab(icon: Icon(Icons.security_rounded, size: 18), text: 'الجدار الناري'),
+                Tab(icon: Icon(Icons.network_ping_rounded, size: 18), text: 'فحص Ping والسجلات'),
               ],
             ),
           ),
@@ -222,14 +222,14 @@ class _RoutesTabState extends State<_RoutesTab> {
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 26),
         children: [
           _NetworkHeader(
-            title: 'WAN & Routes Monitor',
+            title: 'مراقبة WAN والمسارات',
             subtitle: 'قراءة مباشرة من /ip/route/print · تحديث كل 5 ثوانٍ',
             count: _routes.length,
             onRefresh: _load,
           ),
           const SizedBox(height: 10),
           Row(children: [
-            Expanded(child: _NetworkMetric(label: 'مسارات Active', value: activeCount.toString(), color: _nGreen)),
+            Expanded(child: _NetworkMetric(label: 'المسارات النشطة', value: activeCount.toString(), color: _nGreen)),
             const SizedBox(width: 8),
             Expanded(child: _NetworkMetric(label: 'Inactive / unreachable', value: _routes.where((r) => r.unreachable && !r.disabled).length.toString(), color: _nRed)),
           ]),
@@ -243,7 +243,7 @@ class _RoutesTabState extends State<_RoutesTab> {
           else
             ..._routes.map((route) {
               final statusColor = route.disabled ? _nMuted : (route.active ? _nGreen : _nRed);
-              final status = route.disabled ? 'Disabled' : (route.active ? 'Active' : (route.unreachable ? 'Unreachable' : 'Inactive'));
+              final status = route.disabled ? 'معطّل' : (route.active ? 'نشط' : (route.unreachable ? 'يتعذر الوصول إليه' : 'غير نشط'));
               return Container(
                 margin: const EdgeInsets.only(bottom: 9),
                 decoration: BoxDecoration(color: _nPanel, borderRadius: BorderRadius.circular(15), border: Border.all(color: route.unreachable && !route.disabled ? _nRed.withOpacity(0.4) : Colors.white.withOpacity(0.055))),
@@ -278,7 +278,7 @@ class _RoutesTabState extends State<_RoutesTab> {
                         icon: _busy.contains(route.id)
                             ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                             : Icon(route.disabled ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 17),
-                        label: Text(route.dynamic ? 'Dynamic route (للقراءة فقط)' : (route.disabled ? 'تفعيل المسار' : 'تعطيل المسار')),
+                        label: Text(route.dynamic ? 'مسار ديناميكي (للقراءة فقط)' : (route.disabled ? 'تفعيل المسار' : 'تعطيل المسار')),
                         style: OutlinedButton.styleFrom(foregroundColor: route.disabled ? _nGreen : _nAmber),
                       ),
                     ),
@@ -308,16 +308,16 @@ class _FirewallTab extends StatelessWidget {
               labelColor: Colors.white,
               unselectedLabelColor: _nMuted,
               tabs: [
-                Tab(text: 'Filter'),
-                Tab(text: 'Mangle'),
+                Tab(text: 'التصفية'),
+                Tab(text: 'تعديل الحزم Mangle'),
                 Tab(text: 'RAW'),
               ],
             ),
           ),
           Expanded(child: TabBarView(children: [
-            _FirewallRulesList(client: client, section: 'filter', title: 'Filter Rules'),
-            _FirewallRulesList(client: client, section: 'mangle', title: 'Mangle Rules'),
-            _FirewallRulesList(client: client, section: 'raw', title: 'RAW Rules'),
+            _FirewallRulesList(client: client, section: 'filter', title: 'قواعد التصفية'),
+            _FirewallRulesList(client: client, section: 'mangle', title: 'قواعد Mangle'),
+            _FirewallRulesList(client: client, section: 'raw', title: 'قواعد RAW'),
           ])),
         ]),
       );
@@ -497,7 +497,7 @@ class _FirewallRulesListState extends State<_FirewallRulesList> {
                       _NetworkPill(label: 'Packets: ' + _compact(rule.packets)),
                       if (rule.src.isNotEmpty) _NetworkPill(label: 'Src: ' + rule.src, direction: TextDirection.ltr),
                       if (rule.dst.isNotEmpty) _NetworkPill(label: 'Dst: ' + rule.dst, direction: TextDirection.ltr),
-                      _NetworkPill(label: rule.disabled ? 'Disabled' : 'Enabled'),
+                      _NetworkPill(label: rule.disabled ? 'معطّل' : 'مفعّل'),
                     ]),
                     if (rule.dynamic)
                       const Padding(padding: EdgeInsets.only(top: 6), child: Text('قاعدة ديناميكية للقراءة فقط', style: TextStyle(color: _nMuted, fontSize: 9))),
@@ -589,7 +589,7 @@ class _PingLogsTabState extends State<_PingLogsTab> {
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 26),
           children: [
             _NetworkHeader(
-              title: 'Ping & Logs',
+              title: 'فحص Ping والسجلات',
               subtitle: 'الاختبار والسجلات ينفذان من داخل الراوتر',
               count: _logs.length,
               onRefresh: _loadLogs,
