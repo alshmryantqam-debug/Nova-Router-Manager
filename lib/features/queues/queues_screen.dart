@@ -224,7 +224,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
               const SizedBox(height: 10),
               TextFormField(
                 controller: target,
-                decoration: const InputDecoration(labelText: 'Target (IP أو شبكة)'),
+                decoration: const InputDecoration(labelText: 'الهدف (IP أو شبكة)'),
                 validator: (value) => value == null || value.trim().isEmpty ? 'أدخل Target' : null,
               ),
               const SizedBox(height: 10),
@@ -325,8 +325,8 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
               labelColor: Colors.white,
               unselectedLabelColor: _qMuted,
               tabs: [
-                Tab(icon: Icon(Icons.speed_rounded, size: 17), text: 'Simple Queues'),
-                Tab(icon: Icon(Icons.account_tree_rounded, size: 17), text: 'Queue Tree & PCQ'),
+                Tab(icon: Icon(Icons.speed_rounded, size: 17), text: 'الطوابير البسيطة'),
+                Tab(icon: Icon(Icons.account_tree_rounded, size: 17), text: 'شجرة الطوابير وPCQ'),
               ],
             ),
           ),
@@ -358,7 +358,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
               const Icon(Icons.speed_rounded, color: _qAccent, size: 26),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Simple Queues', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900)),
+                const Text('الطوابير البسيطة', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
                 const Text('قراءة إحصاءات السرعة كل 3 ثوانٍ', style: TextStyle(color: _qMuted, fontSize: 10)),
                 const SizedBox(height: 3),
@@ -411,7 +411,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(queue.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 3),
-                          Text(queue.target.isEmpty ? 'Target غير محدد' : queue.target, textDirection: TextDirection.ltr, style: const TextStyle(color: _qMuted, fontSize: 10)),
+                          Text(queue.target.isEmpty ? 'لم يتم تحديد الهدف' : queue.target, textDirection: TextDirection.ltr, style: const TextStyle(color: _qMuted, fontSize: 10)),
                         ])),
                         if (queue.atLimit && !queue.disabled)
                           Container(
@@ -493,9 +493,9 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
               const Icon(Icons.account_tree_rounded, color: _qAccent, size: 27),
               const SizedBox(width: 10),
               const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Queue Tree & PCQ', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900)),
+                Text('شجرة الطوابير وPCQ', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900)),
                 SizedBox(height: 4),
-                Text('علامات Mangle، أنواع PCQ، السرعة والعدادات', style: TextStyle(color: _qMuted, fontSize: 10)),
+                Text('علامات Mangle وأنواع PCQ والسرعات والعدادات', style: TextStyle(color: _qMuted, fontSize: 10)),
                 SizedBox(height: 3),
                 Text('/queue/tree/print stats', textDirection: TextDirection.ltr, style: TextStyle(color: _qMuted, fontSize: 9)),
               ])),
@@ -506,7 +506,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
           Row(children: [
             Expanded(child: _QueueStat(label: 'المفعّلة', value: enabled.toString(), color: _qGreen)),
             const SizedBox(width: 7),
-            Expanded(child: _QueueStat(label: 'Packet marks', value: marked.toString(), color: _qBlue)),
+            Expanded(child: _QueueStat(label: 'علامات الحزم', value: marked.toString(), color: _qBlue)),
             const SizedBox(width: 7),
             Expanded(child: _QueueStat(label: 'PCQ', value: pcq.toString(), color: _qAccent)),
           ]),
@@ -548,18 +548,18 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
                   Expanded(child: _QueueRate(label: 'البيانات المارة', value: _bytesLabel(queue.bytes), color: _qGreen)),
                 ]),
                 const SizedBox(height: 9),
-                _QueueDetailLine(label: 'Packet mark', value: queue.packetMark.isEmpty ? 'غير محدد' : queue.packetMark),
+                _QueueDetailLine(label: 'علامة الحزمة', value: queue.packetMark.isEmpty ? 'غير محدد' : queue.packetMark),
                 _QueueDetailLine(label: 'Queue type / PCQ', value: queue.queue.isEmpty ? 'غير محدد' : queue.queue),
-                _QueueDetailLine(label: 'Max limit', value: queue.maxLimit.isEmpty ? 'غير محدد' : queue.maxLimit),
-                if (queue.limitAt.isNotEmpty && queue.limitAt != '0') _QueueDetailLine(label: 'Limit at', value: queue.limitAt),
-                if (queue.priority.isNotEmpty) _QueueDetailLine(label: 'Priority', value: queue.priority),
+                _QueueDetailLine(label: 'الحد الأقصى', value: queue.maxLimit.isEmpty ? 'غير محدد' : queue.maxLimit),
+                if (queue.limitAt.isNotEmpty && queue.limitAt != '0') _QueueDetailLine(label: 'الحد المضمون', value: queue.limitAt),
+                if (queue.priority.isNotEmpty) _QueueDetailLine(label: 'الأولوية', value: queue.priority),
                 if (queue.packets > 0) Text('Packets: ' + queue.packets.toString(), style: const TextStyle(color: _qMuted, fontSize: 9)),
                 if (queue.comment.isNotEmpty) Text(queue.comment, style: const TextStyle(color: _qMuted, fontSize: 10)),
                 const Divider(height: 20, color: Color(0xFF283142)),
                 Row(children: [
                   Expanded(child: OutlinedButton.icon(
                     onPressed: _treeBusy.contains(queue.id) ? null : () => _editTreeQueue(queue),
-                    icon: const Icon(Icons.tune_rounded, size: 16), label: const Text('تعديل max-limit'))),
+                    icon: const Icon(Icons.tune_rounded, size: 16), label: const Text('تعديل الحد الأقصى للسرعة'))),
                   const SizedBox(width: 8),
                   Expanded(child: FilledButton.tonalIcon(
                     onPressed: _treeBusy.contains(queue.id) ? null : () => _toggleTreeQueue(queue),
@@ -639,7 +639,7 @@ class _TreeQueue {
 
   factory _TreeQueue.fromMap(Map<String, String> row) => _TreeQueue(
     id: row['.id'] ?? '',
-    name: row['name'] ?? 'Queue Tree',
+    name: row['name'] ?? 'شجرة الطوابير',
     parent: row['parent'] ?? '',
     packetMark: row['packet-mark'] ?? '',
     queue: row['queue'] ?? '',
