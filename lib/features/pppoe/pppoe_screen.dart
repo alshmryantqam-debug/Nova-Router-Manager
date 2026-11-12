@@ -181,9 +181,9 @@ class _PppoeWorkspaceState extends State<PppoeWorkspace> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text('تعديل الطابور الديناميكي دون طرد جلسة PPPoE.', style: const TextStyle(color: _ppMuted, fontSize: 12)),
             const SizedBox(height: 10),
-            TextFormField(controller: upload, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'رفع Upload (Mbps)'), validator: _validateSpeed),
+            TextFormField(controller: upload, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'سرعة الرفع (Mbps)'), validator: _validateSpeed),
             const SizedBox(height: 8),
-            TextFormField(controller: download, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'تنزيل Download (Mbps)'), validator: _validateSpeed),
+            TextFormField(controller: download, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'سرعة التنزيل (Mbps)'), validator: _validateSpeed),
           ]),
         ),
         actions: [
@@ -267,10 +267,10 @@ class _PppoeWorkspaceState extends State<PppoeWorkspace> {
                 Icon(s.online ? Icons.wifi_rounded : Icons.wifi_off_rounded, color: s.online ? _ppGreen : _ppRed),
                 const SizedBox(width: 10),
                 Expanded(child: Text(s.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 19))),
-                Text(s.online ? 'متصل' : 'Offline', style: TextStyle(color: s.online ? _ppGreen : _ppRed, fontWeight: FontWeight.bold)),
+                Text(s.online ? 'متصل' : 'غير متصل', style: TextStyle(color: s.online ? _ppGreen : _ppRed, fontWeight: FontWeight.bold)),
               ]),
               const SizedBox(height: 12),
-              _detailLine('IP الحالي', s.address.isEmpty ? '—' : s.address),
+              _detailLine('عنوان IP الحالي', s.address.isEmpty ? '—' : s.address),
               _detailLine('Caller-ID / MAC', s.callerId.isEmpty ? 'غير مقفول' : s.callerId),
               _detailLine('الباقة', s.profile),
               _detailLine('السرعة الحالية RX / TX', '${s.rxMbps.toStringAsFixed(2)} / ${s.txMbps.toStringAsFixed(2)} Mbps'),
@@ -350,7 +350,7 @@ class _PppoeWorkspaceState extends State<PppoeWorkspace> {
             onChanged: (value) => setState(() => _query = value),
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search_rounded),
-              hintText: 'بحث بالاسم أو IP أو MAC أو الباقة',
+              hintText: 'ابحث بالاسم أو IP أو MAC أو الباقة',
               filled: true,
               fillColor: _ppPanel,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: BorderSide.none),
@@ -362,7 +362,7 @@ class _PppoeWorkspaceState extends State<PppoeWorkspace> {
             child: Row(children: [
               _filterChip('الكل', _SubscriberFilter.all),
               _filterChip('المتصلون الآن', _SubscriberFilter.online),
-              _filterChip('المفصولون Offline', _SubscriberFilter.offline),
+              _filterChip('المشتركون غير المتصلين', _SubscriberFilter.offline),
               _filterChip('منتهية الصلاحية', _SubscriberFilter.expired),
               _filterChip('المقفولون بالماك', _SubscriberFilter.locked),
             ]),
@@ -431,7 +431,7 @@ class _PppoeWorkspaceState extends State<PppoeWorkspace> {
           Row(children: [
             Icon(s.macLocked ? Icons.lock_rounded : Icons.lock_open_rounded, size: 14, color: s.macLocked ? _ppGreen : _ppMuted),
             const SizedBox(width: 5),
-            Expanded(child: Text(s.callerId.isEmpty ? 'Caller-ID غير مقفول' : s.callerId, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ppMuted, fontSize: 10))),
+            Expanded(child: Text(s.callerId.isEmpty ? 'Caller-ID غير مقفل' : s.callerId, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _ppMuted, fontSize: 10))),
             if (s.expired) const Text('منتهي', style: TextStyle(color: _ppRed, fontSize: 10, fontWeight: FontWeight.bold)),
             const Icon(Icons.chevron_left_rounded, color: _ppMuted),
           ]),
