@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 import '../../core/providers/router_providers.dart';
 
 const Color _nPanel = Color(0xFF111722);
@@ -190,7 +191,7 @@ class _RoutesTabState extends State<_RoutesTab> {
     if (route.id.isEmpty || route.dynamic || _busy.contains(route.id)) return;
     setState(() => _busy.add(route.id));
     try {
-      await widget.client.command('/ip/route/set', args: <String, String>{
+      await widget.client.verifiedCommand('/ip/route/set', args: <String, String>{
         '.id': route.id,
         'disabled': route.disabled ? 'no' : 'yes',
       });
