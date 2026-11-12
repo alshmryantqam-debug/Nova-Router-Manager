@@ -139,14 +139,14 @@ class HotspotProService {
     final base = _durationSeconds(currentLimit);
     final total = base + extra;
     if (total <= 0) throw ArgumentError('تعذر حساب حد الوقت الحالي.');
-    await client.command('/ip/hotspot/user/set', args: {'.id': userId, 'limit-uptime': _formatDuration(total)});
+    await client.verifiedCommand('/ip/hotspot/user/set', args: {'.id': userId, 'limit-uptime': _formatDuration(total)});
   }
 
   Future<void> topUpQuota(String userId, int currentLimitBytes, int extraBytes) async {
     _requireId(userId);
     if (extraBytes <= 0 || currentLimitBytes < 0) throw ArgumentError('حجم الجيجابايت الإضافي غير صالح.');
     final total = currentLimitBytes + extraBytes;
-    await client.command('/ip/hotspot/user/set', args: {'.id': userId, 'limit-bytes-total': total.toString()});
+    await client.verifiedCommand('/ip/hotspot/user/set', args: {'.id': userId, 'limit-bytes-total': total.toString()});
   }
 
   Future<int> deleteBatch(String batchId) async {
@@ -165,7 +165,7 @@ class HotspotProService {
     final targets = users.where((u) => u.id.isNotEmpty &&
         (u.status == HotspotCardStatus.timeExpired || u.status == HotspotCardStatus.quotaReached)).toList();
     for (final user in targets) {
-      await client.command('/ip/hotspot/user/remove', args: {'.id': user.id});
+      await client.verifiedCommand('/ip/hotspot/user/remove', args: {'.id': user.id});
     }
     return targets.length;
   }
