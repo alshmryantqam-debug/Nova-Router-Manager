@@ -29,7 +29,7 @@ class InterfacesService {
 
   Future<void> setInterfaceComment(String id, String comment) async {
     if (id.trim().isEmpty) throw ArgumentError('معرّف المنفذ غير صالح');
-    await _client.command('/interface/set',
+    await _client.verifiedCommand('/interface/set',
         args: <String, String>{'.id': id, 'comment': comment.trim()});
   }
 
@@ -93,7 +93,7 @@ class InterfacesService {
 
   Future<void> setBridgePortIsolated(String portId, {required bool isolated}) async {
     if (portId.trim().isEmpty) throw ArgumentError('معرّف منفذ البريدج غير صالح');
-    await _client.command('/interface/bridge/port/set', args: <String, String>{
+    await _client.verifiedCommand('/interface/bridge/port/set', args: <String, String>{
       '.id': portId,
       'horizon': isolated ? '1' : 'none',
     });
