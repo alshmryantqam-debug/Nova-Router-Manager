@@ -79,9 +79,9 @@ class _WireguardTunnelScreenState extends ConsumerState<WireguardTunnelScreen> {
     return Scaffold(backgroundColor:const Color(0xFF080B12),appBar:AppBar(title:const Text('الوصول الخارجي والأنفاق'),actions:[IconButton(onPressed:_busy?null:()=>_load(),icon:const Icon(Icons.refresh))]),
       body:_loading?const Center(child:CircularProgressIndicator()):RefreshIndicator(onRefresh:()=>_load(),child:ListView(padding:const EdgeInsets.all(12),children:[
         if(_error!=null)Text(_error!,style:const TextStyle(color:Colors.red)),
-        _card('One-Click WireGuard Tunnel',Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        _card('إنشاء نفق WireGuard بنقرة واحدة',Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
           const Text('ينشئ واجهة 10.200.200.1/24، ومفتاح عميل، وقاعدة UDP 13231 مع السماح للعميل الجديد بالوصول إلى الراوتر فقط.',style:TextStyle(color:Colors.white70)),
-          const SizedBox(height:8),FilledButton.icon(onPressed:_busy?null:_create,icon:const Icon(Icons.rocket_launch),label:const Text('إنشاء نفق وصول خارجي بضغطة زر (1-Click Remote Tunnel)')),
+          const SizedBox(height:8),FilledButton.icon(onPressed:_busy?null:_create,icon:const Icon(Icons.rocket_launch),label:const Text('إنشاء نفق وصول خارجي بضغطة واحدة')),
           OutlinedButton.icon(onPressed:_busy?null:_bth,icon:const Icon(Icons.cloud_sync),label:const Text('Back To Home VPN (بديل عند CGNAT)'))
         ])),
         if(_config!=null&&_config!.isNotEmpty)_card('QR وملف .conf',Column(children:[
@@ -95,7 +95,7 @@ class _WireguardTunnelScreenState extends ConsumerState<WireguardTunnelScreen> {
           title:Text(r['name']??'—',style:const TextStyle(color:Colors.white)),subtitle:Text('port ${r['listen-port']??'—'} • ${r['disabled']=='true'?'معطل':'مفعّل'}',style:const TextStyle(color:Colors.white60)),
           trailing:Wrap(children:[IconButton(onPressed:_busy?null:()=>_toggle(r),icon:const Icon(Icons.power_settings_new)),IconButton(onPressed:_busy?null:()=>_remove(r),icon:const Icon(Icons.delete_outline,color:Colors.redAccent))]))).toList())),
         _card('WireGuard Peers (${_peers.length})',Column(children:_peers.isEmpty?[const Text('لا توجد أقران.',style:TextStyle(color:Colors.white70))]:_peers.map((r)=>ListTile(
-          title:Text(r['name']?.isNotEmpty==true?r['name']!:r['public-key']??'Peer',style:const TextStyle(color:Colors.white)),
+          title:Text(r['name']?.isNotEmpty==true?r['name']!:r['public-key']??'النظير',style:const TextStyle(color:Colors.white)),
           subtitle:Text('${r['interface']??'—'} • ${r['allowed-address']??'—'}\nHandshake: ${r['last-handshake']??'never'} • RX ${r['rx']??'0'} / TX ${r['tx']??'0'}',style:const TextStyle(color:Colors.white60,fontSize:10)),
           trailing:r['dynamic']=='true'?null:Wrap(children:[IconButton(onPressed:_busy?null:()=>_peerAction(r,delete:false),icon:const Icon(Icons.pause)),IconButton(onPressed:_busy?null:()=>_peerAction(r,delete:true),icon:const Icon(Icons.delete_outline,color:Colors.redAccent))]))).toList())),
         const Padding(padding:EdgeInsets.all(8),child:Text('QR وملف .conf يحتويان على مفتاح العميل الخاص. لا تشاركهما. قد يحتاج الاتصال المباشر إلى Public IP أو Port Forward؛ Back To Home يستخدم وسيط MikroTik عند الحاجة.',style:TextStyle(color:Colors.white60,fontSize:11)))
