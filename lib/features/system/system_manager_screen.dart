@@ -92,11 +92,11 @@ class _ScriptsTabState extends State<_ScriptsTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تشغيل Script؟'),
+        title: const Text('تشغيل السكريبت؟'),
         content: Text('سيتم تنفيذ السكريبت "' + name + '" مباشرة على الراوتر. تأكد من محتواه قبل المتابعة.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Run Script')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('تشغيل السكريبت')),
         ],
       ),
     );
@@ -118,7 +118,7 @@ class _ScriptsTabState extends State<_ScriptsTab> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(padding: const EdgeInsets.all(13), children: [
-        _SmHeader(title: 'System Scripts', subtitle: '/system/script/print', count: _scripts.length, refresh: () => _load()),
+        _SmHeader(title: 'سكريبتات النظام', subtitle: '/system/script/print', count: _scripts.length, refresh: () => _load()),
         const SizedBox(height: 8),
         const Text('Run-count يعكس عدد مرات التشغيل المتزامنة التي يبلغ عنها RouterOS، وليس سجلًا تراكميًا مضمونًا.', style: TextStyle(color: _smMuted, fontSize: 10)),
         if (_error != null) Text(_error!, style: const TextStyle(color: _smRed)),
@@ -137,21 +137,21 @@ class _ScriptsTabState extends State<_ScriptsTab> {
                   Icon(Icons.terminal_rounded, color: disabled ? _smMuted : _smAccent),
                   const SizedBox(width: 8),
                   Expanded(child: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900))),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: (disabled ? _smMuted : _smGreen).withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Text(disabled ? 'DISABLED' : 'ENABLED', style: TextStyle(color: disabled ? _smMuted : _smGreen, fontSize: 9, fontWeight: FontWeight.bold))),
+                  Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: (disabled ? _smMuted : _smGreen).withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Text(disabled ? 'معطّل' : 'مفعّل', style: TextStyle(color: disabled ? _smMuted : _smGreen, fontSize: 9, fontWeight: FontWeight.bold))),
                 ]),
                 const SizedBox(height: 8),
                 Wrap(spacing: 6, runSpacing: 6, children: [
-                  _SmPill(label: 'Run-count: ' + (script['run-count'] ?? '0')),
-                  if ((script['owner'] ?? '').isNotEmpty) _SmPill(label: 'Owner: ' + script['owner']!),
-                  if ((script['policy'] ?? '').isNotEmpty) _SmPill(label: 'Policy: ' + script['policy']!),
+                  _SmPill(label: 'عدد مرات التشغيل: ' + (script['run-count'] ?? '0')),
+                  if ((script['owner'] ?? '').isNotEmpty) _SmPill(label: 'المالك: ' + script['owner']!),
+                  if ((script['policy'] ?? '').isNotEmpty) _SmPill(label: 'الصلاحيات: ' + script['policy']!),
                 ]),
                 if ((script['comment'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 7), child: Text(script['comment']!, style: const TextStyle(color: _smMuted, fontSize: 10))),
-                if ((script['last-started'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5), child: Text('Last started: ' + script['last-started']!, style: const TextStyle(color: _smMuted, fontSize: 10))),
+                if ((script['last-started'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5), child: Text('آخر تشغيل: ' + script['last-started']!, style: const TextStyle(color: _smMuted, fontSize: 10))),
                 const SizedBox(height: 8),
                 Align(alignment: Alignment.centerLeft, child: FilledButton.icon(
                   onPressed: disabled || busy ? null : () => _run(script),
                   icon: busy ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Run Script'),
+                  label: const Text('تشغيل السكريبت'),
                 )),
               ]),
             ),
@@ -209,11 +209,11 @@ class _SchedulerTabState extends State<_SchedulerTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _tasks.isEmpty) return const Center(child: CircularProgressIndicator(color: _smAccent));
-    if (_error != null && _tasks.isEmpty) return _SmRetry(title: 'تعذر قراءة Scheduler', error: _error!, retry: _load);
+    if (_error != null && _tasks.isEmpty) return _SmRetry(title: 'تعذرت قراءة المهام المجدولة', error: _error!, retry: _load);
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(padding: const EdgeInsets.all(13), children: [
-        _SmHeader(title: 'System Scheduler', subtitle: '/system/scheduler/print', count: _tasks.length, refresh: _load),
+        _SmHeader(title: 'جدولة مهام النظام', subtitle: '/system/scheduler/print', count: _tasks.length, refresh: _load),
         if (_error != null) Text(_error!, style: const TextStyle(color: _smRed)),
         if (_tasks.isEmpty) const _SmEmpty(text: 'لا توجد مهام مجدولة.'),
         ..._tasks.map((task) {
@@ -228,10 +228,10 @@ class _SchedulerTabState extends State<_SchedulerTab> {
               Switch(value: !disabled, activeColor: _smGreen, onChanged: _busy.contains(id) ? null : (_) => _toggle(task)),
             ]),
             Wrap(spacing: 6, runSpacing: 6, children: [
-              _SmPill(label: 'Next run: ' + ((task['next-run'] ?? '').isEmpty ? '—' : task['next-run']!)),
-              if ((task['interval'] ?? '').isNotEmpty) _SmPill(label: 'Interval: ' + task['interval']!),
-              if ((task['start-time'] ?? '').isNotEmpty) _SmPill(label: 'Start: ' + task['start-time']!),
-              _SmPill(label: disabled ? 'Disabled' : 'Enabled', color: disabled ? _smMuted : _smGreen),
+              _SmPill(label: 'التشغيل القادم: ' + ((task['next-run'] ?? '').isEmpty ? '—' : task['next-run']!)),
+              if ((task['interval'] ?? '').isNotEmpty) _SmPill(label: 'الفاصل الزمني: ' + task['interval']!),
+              if ((task['start-time'] ?? '').isNotEmpty) _SmPill(label: 'وقت البدء: ' + task['start-time']!),
+              _SmPill(label: disabled ? 'معطّل' : 'مفعّل', color: disabled ? _smMuted : _smGreen),
             ]),
             if ((task['comment'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(task['comment']!, style: const TextStyle(color: _smMuted, fontSize: 10))),
             if ((task['on-event'] ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 7), child: Text(task['on-event']!, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _smMuted, fontSize: 10))),
@@ -337,9 +337,9 @@ class _MaintenanceTabState extends State<_MaintenanceTab> {
   String _fileSize(String value) {
     final bytes = int.tryParse(value);
     if (bytes == null) return value.isEmpty ? '—' : value;
-    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toStringAsFixed(1) + ' MB';
-    if (bytes >= 1024) return (bytes / 1024).toStringAsFixed(1) + ' KB';
-    return bytes.toString() + ' B';
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toStringAsFixed(1) + ' ميغابايت';
+    if (bytes >= 1024) return (bytes / 1024).toStringAsFixed(1) + ' كيلوبايت';
+    return bytes.toString() + ' بايت';
   }
 
   @override
@@ -348,7 +348,7 @@ class _MaintenanceTabState extends State<_MaintenanceTab> {
     return RefreshIndicator(
       onRefresh: _loadFiles,
       child: ListView(padding: const EdgeInsets.all(13), children: [
-        _SmHeader(title: 'Maintenance & Backup', subtitle: 'عمليات مباشرة على الراوتر', count: _files.length, refresh: _loadFiles),
+        _SmHeader(title: 'الصيانة والنسخ الاحتياطي', subtitle: 'عمليات مباشرة على الراوتر', count: _files.length, refresh: _loadFiles),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(13),
@@ -368,7 +368,7 @@ class _MaintenanceTabState extends State<_MaintenanceTab> {
             SizedBox(width: double.infinity, child: OutlinedButton.icon(
               onPressed: _actionBusy ? null : _export,
               icon: const Icon(Icons.file_download_outlined),
-              label: const Text('تصدير الإعدادات (/export)'),
+              label: const Text('تصدير إعدادات الراوتر (/export)'),
             )),
             if (_actionBusy) const LinearProgressIndicator(),
           ]),
