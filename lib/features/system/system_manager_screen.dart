@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 import '../../core/providers/router_providers.dart';
 
 const _smPanel = Color(0xFF111722);
@@ -198,7 +199,7 @@ class _SchedulerTabState extends State<_SchedulerTab> {
     setState(() => _busy.add(id));
     try {
       final disabled = task['disabled'] == 'true';
-      await widget.client.command('/system/scheduler/set', args: <String, String>{'.id': id, 'disabled': disabled ? 'no' : 'yes'});
+      await widget.client.verifiedCommand('/system/scheduler/set', args: <String, String>{'.id': id, 'disabled': disabled ? 'no' : 'yes'});
       if (mounted) _smMessage(context, disabled ? 'تم تفعيل المهمة.' : 'تم تعطيل المهمة.');
       await _load();
     } catch (e) {
