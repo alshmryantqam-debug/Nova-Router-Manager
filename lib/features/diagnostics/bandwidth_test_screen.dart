@@ -223,7 +223,7 @@ class _BandwidthTestScreenState extends ConsumerState<BandwidthTestScreen> {
     return Scaffold(
       backgroundColor: _bandBg,
       appBar: AppBar(
-        backgroundColor: _bandBg, foregroundColor: Colors.white, title: const Text('Bandwidth Test'),
+        backgroundColor: _bandBg, foregroundColor: Colors.white, title: const Text('اختبار عرض النطاق'),
         actions: [IconButton(onPressed: _running || _busy ? null : () => setState(() { _error = null; _status = 'جاهز لبدء الاختبار'; }), icon: const Icon(Icons.refresh_rounded))],
       ),
       body: ListView(padding: const EdgeInsets.all(13), children: [
@@ -235,17 +235,17 @@ class _BandwidthTestScreenState extends ConsumerState<BandwidthTestScreen> {
           TextField(controller: _password, enabled: !_running, obscureText: true, autocorrect: false, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: 'كلمة المرور')),
           const SizedBox(height: 9),
           DropdownButtonFormField<String>(
-            initialValue: _protocol, decoration: const InputDecoration(labelText: 'Protocol'), dropdownColor: _bandPanel, style: const TextStyle(color: Colors.white),
+            initialValue: _protocol, decoration: const InputDecoration(labelText: 'البروتوكول'), dropdownColor: _bandPanel, style: const TextStyle(color: Colors.white),
             items: const [DropdownMenuItem(value: 'tcp', child: Text('TCP')), DropdownMenuItem(value: 'udp', child: Text('UDP'))],
             onChanged: _running ? null : (value) => setState(() => _protocol = value ?? _protocol),
           ),
           const SizedBox(height: 9),
           DropdownButtonFormField<String>(
-            initialValue: _direction, decoration: const InputDecoration(labelText: 'Direction'), dropdownColor: _bandPanel, style: const TextStyle(color: Colors.white),
+            initialValue: _direction, decoration: const InputDecoration(labelText: 'الاتجاه'), dropdownColor: _bandPanel, style: const TextStyle(color: Colors.white),
             items: const [
-              DropdownMenuItem(value: 'receive', child: Text('Receive')),
-              DropdownMenuItem(value: 'transmit', child: Text('Transmit')),
-              DropdownMenuItem(value: 'both', child: Text('Both directions')),
+              DropdownMenuItem(value: 'receive', child: Text('استقبال')),
+              DropdownMenuItem(value: 'transmit', child: Text('إرسال')),
+              DropdownMenuItem(value: 'both', child: Text('الاتجاهان معاً')),
             ],
             onChanged: _running ? null : (value) => setState(() => _direction = value ?? _direction),
           ),
@@ -281,8 +281,8 @@ class _BandwidthTestScreenState extends ConsumerState<BandwidthTestScreen> {
           const SizedBox(height: 12),
           SizedBox(height: 185, child: _speedChart()),
           const Row(children: [
-            Icon(Icons.circle, color: _bandRx, size: 8), SizedBox(width: 5), Text('RX Mbps', style: TextStyle(color: _bandMuted, fontSize: 10)),
-            SizedBox(width: 15), Icon(Icons.circle, color: _bandTx, size: 8), SizedBox(width: 5), Text('TX Mbps', style: TextStyle(color: _bandMuted, fontSize: 10)),
+            Icon(Icons.circle, color: _bandRx, size: 8), SizedBox(width: 5), Text('الاستقبال Mbps', style: TextStyle(color: _bandMuted, fontSize: 10)),
+            SizedBox(width: 15), Icon(Icons.circle, color: _bandTx, size: 8), SizedBox(width: 5), Text('الإرسال Mbps', style: TextStyle(color: _bandMuted, fontSize: 10)),
           ]),
         ])),
         const Padding(
