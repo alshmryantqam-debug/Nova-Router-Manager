@@ -15,9 +15,9 @@ void main() {
 class NovaRouterManagerApp extends StatelessWidget {
   const NovaRouterManagerApp({super.key});
 
-  static const Color _background = Color(0xFF080B12);
-  static const Color _surface = Color(0xFF111722);
-  static const Color _accent = Color(0xFF8B7CFF);
+  static const Color _background = Color(0xFF070D15);
+  static const Color _surface = Color(0xFF101B27);
+  static const Color _accent = Color(0xFF35D7F2);
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ class NovaRouterManagerApp extends StatelessWidget {
       colorScheme: scheme,
       scaffoldBackgroundColor: _background,
       canvasColor: _surface,
-      dividerColor: const Color(0xFF283142),
+      dividerColor: const Color(0xFF233747),
       appBarTheme: const AppBarTheme(
         backgroundColor: _background,
         foregroundColor: Colors.white,
@@ -43,20 +43,20 @@ class NovaRouterManagerApp extends StatelessWidget {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF0B1019),
+        fillColor: const Color(0xFF0B1520),
         labelStyle: const TextStyle(color: Color(0xFF8D9AB0)),
         hintStyle: const TextStyle(color: Color(0xFF5D687B)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: Color(0xFF283142)),
+          borderSide: const BorderSide(color: Color(0xFF233747)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: Color(0xFF283142)),
+          borderSide: const BorderSide(color: Color(0xFF233747)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: _accent, width: 1.3),
+          borderSide: const BorderSide(color: _accent, width: 1.6),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -71,7 +71,7 @@ class NovaRouterManagerApp extends StatelessWidget {
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: _accent,
-        linearTrackColor: Color(0xFF283142),
+        linearTrackColor: Color(0xFF233747),
       ),
     );
 
