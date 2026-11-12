@@ -123,16 +123,16 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
 
   Future<void> _addNat() async {
     final data = await _form('إضافة قاعدة NAT', const <_NatField>[
-      _NatField('chain', 'Chain', required: true, initial: 'srcnat', hint: 'srcnat / dstnat'),
-      _NatField('action', 'Action', required: true, initial: 'masquerade', hint: 'masquerade / dst-nat / src-nat / redirect'),
-      _NatField('out-interface', 'Out Interface', hint: 'ether1 (لـ masquerade)'),
-      _NatField('in-interface', 'In Interface', hint: 'bridge-lan'),
-      _NatField('protocol', 'Protocol', hint: 'tcp / udp'),
-      _NatField('dst-port', 'Destination Port', hint: '443 أو 8080-8090'),
-      _NatField('dst-address', 'Destination Address'),
-      _NatField('to-addresses', 'To Addresses', hint: '192.168.88.10 (لـ dst-nat)'),
-      _NatField('to-ports', 'To Ports', hint: '8443'),
-      _NatField('comment', 'Comment'),
+      _NatField('chain', 'السلسلة', required: true, initial: 'srcnat', hint: 'srcnat / dstnat'),
+      _NatField('action', 'الإجراء', required: true, initial: 'masquerade', hint: 'masquerade / dst-nat / src-nat / redirect'),
+      _NatField('out-interface', 'واجهة الخروج', hint: 'ether1 (لـ masquerade)'),
+      _NatField('in-interface', 'واجهة الدخول', hint: 'bridge-lan'),
+      _NatField('protocol', 'البروتوكول', hint: 'tcp / udp'),
+      _NatField('dst-port', 'منفذ الوجهة', hint: '443 أو 8080-8090'),
+      _NatField('dst-address', 'عنوان الوجهة'),
+      _NatField('to-addresses', 'التحويل إلى العناوين', hint: '192.168.88.10 (لـ dst-nat)'),
+      _NatField('to-ports', 'التحويل إلى المنافذ', hint: '8443'),
+      _NatField('comment', 'ملاحظة'),
     ]);
     if (data == null || _client == null) return;
     if (!await _confirm('إضافة قاعدة NAT؟', 'ستُضاف القاعدة إلى الراوتر مباشرة وقد تؤثر على التوجيه أو تعريض خدمة للإنترنت. راجع Chain وAction والمنافذ قبل المتابعة.')) return;
@@ -168,7 +168,7 @@ class _NatAddressListScreenState extends ConsumerState<NatAddressListScreen> wit
       _NatField('list', 'اسم القائمة', required: true, hint: 'blocked / bypass / disconnected'),
       _NatField('address', 'IP أو شبكة CIDR', required: true, hint: '192.168.10.50 أو 192.168.10.0/24'),
       _NatField('timeout', 'Timeout اختياري', hint: '30m / 12h / 1d', helper: 'اتركه فارغاً للإدخال الدائم'),
-      _NatField('comment', 'Comment'),
+      _NatField('comment', 'ملاحظة'),
     ]);
     if (data == null || _client == null) return;
     if (!await _confirm('إضافة عنوان للقائمة؟', 'تحقق من اسم القائمة والقواعد التي تستخدمها. إدخال العنوان في القائمة لا يضمن الحظر إلا إذا كانت قواعد Firewall أو RAW تشير إلى هذه القائمة.')) return;
