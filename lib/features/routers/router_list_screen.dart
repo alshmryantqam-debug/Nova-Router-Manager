@@ -351,7 +351,7 @@ class _SummaryPanel extends StatelessWidget {
           Row(children: [
             Expanded(child: _MetricBox(label: 'الراوترات', value: '$total', color: Colors.white)),
             const SizedBox(width: 10),
-            Expanded(child: _MetricBox(label: 'متصلة بالـ TCP', value: '$online', color: _green)),
+            Expanded(child: _MetricBox(label: 'اتصالات TCP الناجحة', value: '$online', color: _green)),
             const SizedBox(width: 10),
             Expanded(child: _MetricBox(label: 'غير متاحة', value: '$offline', color: _red)),
           ]),
@@ -446,7 +446,7 @@ class _RouterCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    ping == null ? 'بانتظار الفحص' : latency != null ? 'Online  •  ${latency.toStringAsFixed(1)} ms' : 'Offline',
+                    ping == null ? 'بانتظار الفحص' : latency != null ? 'Online  •  ${latency.toStringAsFixed(1)} ms' : 'غير متصل',
                     textDirection: latency != null ? TextDirection.ltr : TextDirection.rtl,
                     style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
                   ),
@@ -743,7 +743,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(widget.router == null ? 'إضافة راوتر جديد' : 'تعديل بيانات الراوتر', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
-                      const Text('يجب نجاح اختبار RouterOS قبل الحفظ', style: TextStyle(color: _muted, fontSize: 11)),
+                      const Text('يجب نجاح اختبار RouterOS قبل حفظ الاتصال', style: TextStyle(color: _muted, fontSize: 11)),
                     ]),
                   ),
                 ]),
@@ -910,7 +910,7 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
                     onPressed: _testing || _saving ? null : _testConnection,
                     style: OutlinedButton.styleFrom(foregroundColor: _accent, side: BorderSide(color: _accent.withOpacity(0.65)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                     icon: _testing ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: _accent)) : const Icon(Icons.network_check_rounded),
-                    label: Text(_testing ? 'جارٍ اختبار الاتصال...' : 'فحص الاتصال (Test Connection)', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                    label: Text(_testing ? 'جارٍ اختبار الاتصال...' : 'فحص اتصال الراوتر', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
                   ),
                 ),
                 const SizedBox(height: 10),
