@@ -60,11 +60,11 @@ class _WirelessTowersScreenState extends ConsumerState<WirelessTowersScreen> {
     final ssid=TextEditingController(text:row['ssid']??''),freq=TextEditingController(text:row['frequency']??'');
     const widths=['5MHz','10MHz','20MHz','20/40MHz','40MHz','10/20/40MHz','20/40/80MHz','20/40/80/160MHz'];var width=row['channel-width']??'20/40MHz';if(!widths.contains(width))width='20MHz';
     final form=GlobalKey<FormState>();
-    final save=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:_panel,title:Text('إعداد '+(row['name']??'Wireless')),
+    final save=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(backgroundColor:_panel,title:Text('إعداد '+(row['name']??'اللاسلكي')),
       content:Form(key:form,child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextFormField(controller:ssid,decoration:const InputDecoration(labelText:'SSID'),validator:(v)=>(v??'').trim().isEmpty?'أدخل SSID':null),
-        TextFormField(controller:freq,keyboardType:TextInputType.number,inputFormatters:[FilteringTextInputFormatter.digitsOnly],decoration:const InputDecoration(labelText:'Frequency (MHz)')),
-        const SizedBox(height:8),DropdownButtonFormField<String>(value:width,dropdownColor:_panel,decoration:const InputDecoration(labelText:'Channel Width'),items:widths.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v)=>setDialog(()=>width=v??width))
+        TextFormField(controller:freq,keyboardType:TextInputType.number,inputFormatters:[FilteringTextInputFormatter.digitsOnly],decoration:const InputDecoration(labelText:'التردد (MHz)')),
+        const SizedBox(height:8),DropdownButtonFormField<String>(value:width,dropdownColor:_panel,decoration:const InputDecoration(labelText:'عرض القناة'),items:widths.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v)=>setDialog(()=>width=v??width))
       ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,form.currentState?.validate()==true),child:const Text('حفظ'))])));
     if(save==true){setState(()=>_busy=true);try{await s.updateWirelessInterface(id:id,ssid:ssid.text.trim(),frequency:freq.text.trim().isEmpty?null:freq.text.trim(),channelWidth:width);_toast('تم تحديث اللاسلكي.');await _refresh(silent:true);}catch(e){_toast(_err(e),bad:true);}finally{if(mounted)setState(()=>_busy=false);}}ssid.dispose();freq.dispose();
   }
@@ -93,10 +93,10 @@ class _WirelessTowersScreenState extends ConsumerState<WirelessTowersScreen> {
         if(ports.isNotEmpty)...[const Divider(color:Color(0xFF283142)),...ports.map((p)=>Row(children:[Expanded(child:Text('PoE '+(p['interface']??p['name']??'')+' • '+(p['poe-out-power']??'—')+' W • '+(p['poe-out']??'—'),style:const TextStyle(color:_muted,fontSize:10))),IconButton(tooltip:'إعادة تشغيل الصحن كهربائياً (PoE Power Cycle)',onPressed:_busy?null:()=>_cyclePoe(p),icon:const Icon(Icons.restart_alt,color:_red))]))]
       ]));
     }),
-    if(_poe.isNotEmpty)_card('منافذ PoE',Column(children:_poe.map((p)=>ListTile(contentPadding:EdgeInsets.zero,title:Text(p['interface']??p['name']??'Ethernet',style:const TextStyle(color:Colors.white,fontSize:12)),subtitle:Text('القدرة: '+(p['poe-out-power']??'—')+' W • الحالة: '+(p['poe-out-status']??p['poe-out']??'—'),style:const TextStyle(color:_muted,fontSize:10)),trailing:PopupMenuButton<String>(enabled:!_busy,onSelected:(v)=>_setPoe(p,v),icon:const Icon(Icons.power_settings_new,color:_accent),itemBuilder:(_)=>const [PopupMenuItem(value:'auto-on',child:Text('Auto On')),PopupMenuItem(value:'forced-on',child:Text('Forced On')),PopupMenuItem(value:'off',child:Text('Off'))]))).toList()))
+    if(_poe.isNotEmpty)_card('منافذ الطاقة عبر الإيثرنت PoE',Column(children:_poe.map((p)=>ListTile(contentPadding:EdgeInsets.zero,title:Text(p['interface']??p['name']??'إيثرنت',style:const TextStyle(color:Colors.white,fontSize:12)),subtitle:Text('القدرة: '+(p['poe-out-power']??'—')+' W • الحالة: '+(p['poe-out-status']??p['poe-out']??'—'),style:const TextStyle(color:_muted,fontSize:10)),trailing:PopupMenuButton<String>(enabled:!_busy,onSelected:(v)=>_setPoe(p,v),icon:const Icon(Icons.power_settings_new,color:_accent),itemBuilder:(_)=>const [PopupMenuItem(value:'auto-on',child:Text('تشغيل تلقائي')),PopupMenuItem(value:'forced-on',child:Text('تشغيل إجباري')),PopupMenuItem(value:'off',child:Text('إيقاف'))]))).toList()))
   ]);
   Widget _stationsTab()=>ListView(padding:const EdgeInsets.all(12),children:[
-    _card('Wireless Registration Table',Text('المتصلون الآن: '+_stations.length.toString(),style:const TextStyle(color:_muted,fontSize:12))),
+    _card('جدول تسجيل الأجهزة اللاسلكية',Text('المتصلون الآن: '+_stations.length.toString(),style:const TextStyle(color:_muted,fontSize:12))),
     if(_stations.isEmpty)_card('لا توجد محطات مسجلة',const Text('قد لا تكون حزمة wireless مثبتة أو لا توجد محطات متصلة.',style:TextStyle(color:_muted,fontSize:12))) else ..._stations.map((r){
       final n=_signalNum(r);final weak=n!=null&&n< -75;final color=weak?_red:_green;
       return _card(r['mac-address']??r['radio-name']??r['.id']??'Station',Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
@@ -109,7 +109,7 @@ class _WirelessTowersScreenState extends ConsumerState<WirelessTowersScreen> {
   ]);
   Widget _wirelessTab()=>ListView(padding:const EdgeInsets.all(12),children:[
     _card('واجهات اللاسلكي',const Text('تغيير التردد قد يقطع الاتصال مؤقتاً. أجهزة RouterOS الحديثة قد تستخدم wifi أو wifiwave2 بدلاً من wireless.',style:TextStyle(color:Colors.white70,fontSize:11,height:1.5))),
-    if(_wireless.isEmpty)_card('لا توجد واجهات wireless',const Text('تحقق من توافق الجهاز وحزمة اللاسلكي في RouterOS.',style:TextStyle(color:_muted,fontSize:12))) else ..._wireless.map((r)=>_card(r['name']??'Wireless',Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+    if(_wireless.isEmpty)_card('لا توجد واجهات wireless',const Text('تحقق من توافق الجهاز وحزمة اللاسلكي في RouterOS.',style:TextStyle(color:_muted,fontSize:12))) else ..._wireless.map((r)=>_card(r['name']??'اللاسلكي',Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
       Text('SSID: '+(r['ssid']??'—'),style:const TextStyle(color:Colors.white70,fontSize:12)),const SizedBox(height:4),Text('Frequency: '+(r['frequency']??'—')+' MHz • Channel Width: '+(r['channel-width']??'—'),style:const TextStyle(color:_muted,fontSize:11)),const SizedBox(height:8),
       Align(alignment:Alignment.centerRight,child:OutlinedButton.icon(onPressed:_busy?null:()=>_editWireless(r),icon:const Icon(Icons.tune),label:const Text('تعديل SSID والتردد وعرض القناة')))
     ])))
