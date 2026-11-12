@@ -74,7 +74,7 @@ class IpArpDnsService {
 
   Future<void> setDnsServers(String servers) async {
     final value = _required(servers, 'servers');
-    await client.command('/ip/dns/set', args: {'servers': value});
+    await client.verifiedCommand('/ip/dns/set', args: {'servers': value});
   }
 
   Future<List<Map<String, String>>> listDnsStatic() => client.command('/ip/dns/static/print');
