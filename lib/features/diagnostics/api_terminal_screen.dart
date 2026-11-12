@@ -203,7 +203,7 @@ class _ApiTerminalScreenState extends ConsumerState<ApiTerminalScreen> {
             Wrap(spacing: 6, runSpacing: 2, children: [
               _quickChip('فحص DNS', Icons.dns_outlined, () => _runCommand(path: '/ip/dns/print', args: const {})),
               _quickChip('عناوين IP', Icons.route_outlined, () => _runCommand(path: '/ip/address/print', args: const {})),
-              _quickChip('Flush DNS Cache', Icons.cleaning_services_outlined, () => _runCommand(path: '/ip/dns/cache/flush', args: const {})),
+              _quickChip('مسح ذاكرة DNS المؤقتة', Icons.cleaning_services_outlined, () => _runCommand(path: '/ip/dns/cache/flush', args: const {})),
               _quickChip('جدول ARP', Icons.device_hub_outlined, () => _runCommand(path: '/ip/arp/print', args: const {})),
             ]),
           ]),
@@ -220,14 +220,14 @@ class _ApiTerminalScreenState extends ConsumerState<ApiTerminalScreen> {
                 const Row(children: [
                   Icon(Icons.terminal_rounded, color: _consoleGreen, size: 20),
                   SizedBox(width: 8),
-                  Text('أدخل مسار RouterOS API', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  Text('أدخل مسار أمر RouterOS API', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                 ]),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _pathController,
                   style: const TextStyle(color: _consoleGreen, fontFamily: 'monospace', fontSize: 13),
                   textDirection: TextDirection.ltr,
-                  decoration: const InputDecoration(labelText: 'Command path', hintText: '/ip/firewall/nat/print',
+                  decoration: const InputDecoration(labelText: 'مسار الأمر', hintText: '/ip/firewall/nat/print',
                     prefixText: '> ', prefixStyle: TextStyle(color: _consoleGreen, fontFamily: 'monospace')),
                 ),
                 const SizedBox(height: 10),
@@ -303,7 +303,7 @@ class _ApiTerminalScreenState extends ConsumerState<ApiTerminalScreen> {
             scrollDirection: Axis.horizontal,
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(12),
-              child: SelectableText(item.output.isEmpty ? (item.isError ? 'ERROR' : 'waiting for response…') : item.output,
+              child: SelectableText(item.output.isEmpty ? (item.isError ? 'ERROR' : 'بانتظار استجابة الراوتر…') : item.output,
                 textDirection: TextDirection.ltr,
                 style: TextStyle(color: item.isError ? _consoleRed : const Color(0xFFD5E0EC),
                   fontFamily: 'monospace', fontSize: 11, height: 1.45)),
