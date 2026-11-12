@@ -213,7 +213,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
         content: const Text('اختر مكان إضافة قاعدة الإسقاط. سيتم تطبيقها مباشرة على الراوتر.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-          OutlinedButton(onPressed: () => Navigator.pop(dialogContext, 'filter'), child: const Text('Filter')),
+          OutlinedButton(onPressed: () => Navigator.pop(dialogContext, 'filter'), child: const Text('تصفية')),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, 'raw'), child: const Text('RAW')),
         ],
       ),
@@ -246,11 +246,11 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
           const Text('صيغة Max-limit: رفع/تنزيل، مثل 5M/5M أو 512k/2M.', style: TextStyle(color: _torchMuted, fontSize: 12)),
           const SizedBox(height: 12),
           TextField(controller: controller, autofocus: true, style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
-            decoration: const InputDecoration(labelText: 'Max-limit', hintText: '5M/5M')),
+            decoration: const InputDecoration(labelText: 'الحد الأقصى للسرعة', hintText: '5M/5M')),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('إنشاء Simple Queue')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('إنشاء طابور سرعة بسيط')),
         ],
       ),
     );
@@ -266,7 +266,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
       'name': 'NOVA-TORCH-$safeName',
       'target': target,
       'max-limit': rate,
-      'comment': 'NOVA live torch rate limit',
+      'comment': 'حد سرعة تدفق Torch من نوفا',
     }));
   }
 
@@ -300,7 +300,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
       appBar: AppBar(
         backgroundColor: _torchBg,
         foregroundColor: Colors.white,
-        title: const Text('Live Torch', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('مراقبة Torch المباشرة', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(tooltip: 'تحديث قائمة المنافذ', onPressed: _loadingInterfaces ? null : _loadInterfaces,
             icon: const Icon(Icons.refresh_rounded)),
@@ -327,7 +327,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
               value: _selectedInterface,
               dropdownColor: _torchPanel,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Interface', prefixIcon: Icon(Icons.settings_ethernet)),
+              decoration: const InputDecoration(labelText: 'الواجهة', prefixIcon: Icon(Icons.settings_ethernet)),
               items: _interfaces.map((name) => DropdownMenuItem(value: name, child: Text(name))).toList(),
               onChanged: _running || _loadingInterfaces ? null : (v) => setState(() => _selectedInterface = v),
             ),
@@ -345,7 +345,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
             DropdownButtonFormField<String>(
               value: _protocol,
               dropdownColor: _torchPanel,
-              decoration: const InputDecoration(labelText: 'Protocol'),
+              decoration: const InputDecoration(labelText: 'البروتوكول'),
               items: const [
                 DropdownMenuItem(value: 'all', child: Text('كل البروتوكولات')),
                 DropdownMenuItem(value: 'tcp', child: Text('TCP')),
@@ -400,7 +400,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
         Row(children: [
           const Icon(Icons.swap_horiz_rounded, color: _torchAccent),
           const SizedBox(width: 8),
-          Expanded(child: Text(flow.protocol.isEmpty ? 'IP flow' : flow.protocol.toUpperCase(),
+          Expanded(child: Text(flow.protocol.isEmpty ? 'تدفق IP' : flow.protocol.toUpperCase(),
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
           if (flow.srcPort.isNotEmpty || flow.dstPort.isNotEmpty)
             Text('${flow.srcPort.isEmpty ? '—' : flow.srcPort} → ${flow.dstPort.isEmpty ? '—' : flow.dstPort}',
