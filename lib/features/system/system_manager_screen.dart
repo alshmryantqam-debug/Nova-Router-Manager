@@ -40,9 +40,9 @@ class SystemManagerWorkspace extends StatelessWidget {
               labelColor: Colors.white,
               unselectedLabelColor: _smMuted,
               tabs: [
-                Tab(icon: Icon(Icons.code_rounded, size: 18), text: 'Scripts'),
-                Tab(icon: Icon(Icons.schedule_rounded, size: 18), text: 'Scheduler'),
-                Tab(icon: Icon(Icons.build_circle_outlined, size: 18), text: 'Maintenance'),
+                Tab(icon: Icon(Icons.code_rounded, size: 18), text: 'السكريبتات'),
+                Tab(icon: Icon(Icons.schedule_rounded, size: 18), text: 'المهام المجدولة'),
+                Tab(icon: Icon(Icons.build_circle_outlined, size: 18), text: 'الصيانة'),
               ],
             ),
           ),
