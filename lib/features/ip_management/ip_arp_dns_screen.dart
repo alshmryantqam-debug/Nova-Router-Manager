@@ -130,7 +130,7 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
     final data = await _formDialog('إضافة عنوان IP', [
       const _Field('address','Address / CIDR',required:true,hint:'192.168.10.1/24'),
       _Field('interface','المنفذ',required:true,hint:'ether1',helper:'الأسماء المتاحة: ${_interfaces.map((e)=>e['name']).join(', ')}'),
-      const _Field('comment','Comment'),
+      const _Field('comment','ملاحظة'),
     ]);
     if (data == null || _service == null) return;
     await _perform(() => _service!.addAddress(address:data['address']!,interface:data['interface']!,comment:data['comment']!), 'تمت إضافة عنوان IP.');
@@ -141,7 +141,7 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
     final data=await _formDialog('تعديل عنوان IP',[
       _Field('address','Address / CIDR',required:true,initial:row['address']??''),
       _Field('interface','المنفذ',required:true,initial:row['interface']??''),
-      _Field('comment','Comment',initial:row['comment']??''),
+      _Field('comment','ملاحظة',initial:row['comment']??''),
     ]);
     if(data==null||_service==null)return;
     await _perform(() => _service!.updateAddress(id,address:data['address'],interface:data['interface'],comment:data['comment']), 'تم تحديث عنوان IP.');
@@ -150,8 +150,8 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
   Future<void> _addPool() async {
     final data=await _formDialog('إضافة IP Pool',[
       const _Field('name','اسم النطاق',required:true,hint:'hotspot-pool'),
-      const _Field('ranges','Range أو نطاقات مفصولة بفواصل',required:true,hint:'192.168.10.10-192.168.10.250'),
-      const _Field('comment','Comment'),
+      const _Field('ranges','النطاق أو نطاقات مفصولة بفواصل',required:true,hint:'192.168.10.10-192.168.10.250'),
+      const _Field('comment','ملاحظة'),
     ]);
     if(data==null||_service==null)return;
     await _perform(() => _service!.addPool(name:data['name']!,ranges:data['ranges']!,comment:data['comment']!), 'تم إنشاء IP Pool.');
@@ -161,8 +161,8 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
     final id=row['.id']; if(id==null)return;
     final data=await _formDialog('تعديل IP Pool',[
       _Field('name','اسم النطاق',required:true,initial:row['name']??''),
-      _Field('ranges','Ranges',required:true,initial:row['ranges']??''),
-      _Field('comment','Comment',initial:row['comment']??''),
+      _Field('ranges','النطاقات',required:true,initial:row['ranges']??''),
+      _Field('comment','ملاحظة',initial:row['comment']??''),
     ]);
     if(data==null||_service==null)return;
     await _perform(() => _service!.updatePool(id,name:data['name'],ranges:data['ranges'],comment:data['comment']), 'تم تحديث IP Pool.');
@@ -172,8 +172,8 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
     final data=await _formDialog('إضافة DNS Static',[
       const _Field('name','اسم النطاق',required:true,hint:'local.server أو ads.example'),
       const _Field('address','عنوان IP أو اتركه فارغاً لنوع سجل خاص'),
-      const _Field('type','Type اختياري',hint:'A / AAAA / NXDOMAIN / FWD'),
-      const _Field('comment','Comment'),
+      const _Field('type','النوع (اختياري)',hint:'A / AAAA / NXDOMAIN / FWD'),
+      const _Field('comment','ملاحظة'),
     ]);
     if(data==null||_service==null)return;
     await _perform(() => _service!.addDnsStatic(name:data['name']!,address:data['address'],type:data['type'],comment:data['comment']), 'تمت إضافة DNS Static.');
@@ -240,10 +240,10 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
       appBar:AppBar(backgroundColor:_ipBg,foregroundColor:Colors.white,title:const Text('IP • ARP • DNS'),
         actions:[IconButton(onPressed:_busy||_loading?null:_loadAll,icon:const Icon(Icons.refresh_rounded))],
         bottom:TabBar(controller:_tabs,isScrollable:true,indicatorColor:_ipAccent,labelColor:Colors.white,unselectedLabelColor:_ipMuted,tabs:const[
-          Tab(icon:Icon(Icons.lan_outlined,size:17),text:'IP Addresses'),
-          Tab(icon:Icon(Icons.hub_outlined,size:17),text:'ARP Table'),
-          Tab(icon:Icon(Icons.dns_outlined,size:17),text:'DNS & Cache'),
-          Tab(icon:Icon(Icons.route_outlined,size:17),text:'IP Pools'),
+          Tab(icon:Icon(Icons.lan_outlined,size:17),text:'عناوين IP'),
+          Tab(icon:Icon(Icons.hub_outlined,size:17),text:'جدول ARP'),
+          Tab(icon:Icon(Icons.dns_outlined,size:17),text:'DNS والذاكرة المؤقتة'),
+          Tab(icon:Icon(Icons.route_outlined,size:17),text:'مجمعات عناوين IP'),
         ]),
       ),
       body:_loading?const Center(child:CircularProgressIndicator(color:_ipAccent)):Column(children:[
@@ -304,7 +304,7 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
   ]);
 
   Widget _poolsTab()=>ListView(padding:const EdgeInsets.all(12),children:[
-    _panel(title:'IP Pools',action:IconButton(onPressed:_busy?null:_addPool,icon:const Icon(Icons.add_circle_outline,color:_ipAccent)),child:Column(children:[
+    _panel(title:'مجمعات عناوين IP',action:IconButton(onPressed:_busy?null:_addPool,icon:const Icon(Icons.add_circle_outline,color:_ipAccent)),child:Column(children:[
       if(_pools.isEmpty)_empty('لا توجد IP Pools.')
       else ..._pools.map((row)=>_rowCard(row['name']??'—', '${row['ranges']??'—'} • ${row['comment']??''}',icon:Icons.route,color:_ipGreen,actions:[
         IconButton(tooltip:'تعديل النطاق',onPressed:_busy?null:()=>_editPool(row),icon:const Icon(Icons.edit_outlined,color:_ipAccent,size:18)),
