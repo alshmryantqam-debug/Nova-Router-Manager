@@ -40,7 +40,7 @@ import '../firewall_advanced/pcc_wizard_screen.dart';
 const Color _bg = Color(0xFF080B12);
 const Color _panel = Color(0xFF111722);
 const Color _muted = Color(0xFF8D9AB0);
-const Color _accent = Color(0xFF8B7CFF);
+const Color _accent = Color(0xFF35D7F2);
 const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
@@ -249,7 +249,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _selectSection(_DashboardSection section) {
-    Navigator.of(context).pop();
+    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
     if (section != _section) setState(() => _section = section);
   }
 
@@ -266,7 +266,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return const Scaffold(backgroundColor: _bg, body: Center(child: CircularProgressIndicator(color: _accent)));
     }
 
-    return Scaffold(
+    return PopScope<Object?>(
+      canPop: _section == _DashboardSection.home,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _section != _DashboardSection.home && mounted) {
+          setState(() => _section = _DashboardSection.home);
+        }
+      },
+      child: Scaffold(
       backgroundColor: _bg,
       drawer: _buildDrawer(activeRouter),
       appBar: AppBar(
@@ -344,13 +351,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                                   : _section == _DashboardSection.hotspotTemplateInstaller
                                                                                                       ? const HotspotTemplateInstallerScreen()
                                                                                                       : const NetworkToolsScreen(),
+      ),
     );
   }
 
   Widget _buildDrawer(SavedRouter? activeRouter) => Drawer(
         backgroundColor: _panel,
         child: SafeArea(
-          child: Column(children: [
+          child: ListView(padding: EdgeInsets.zero, children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
@@ -377,25 +385,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _drawerItem(_DashboardSection.queues, Icons.speed_rounded, 'الطوابير والسرعات'),
             _drawerItem(_DashboardSection.neighbors, Icons.radar_rounded, 'كاشف الأجهزة والاتصالات'),
             _drawerItem(_DashboardSection.firewall, Icons.security_rounded, 'الشبكة والفايروول'),
-            _drawerItem(_DashboardSection.dhcpBinding, Icons.devices_other_rounded, 'DHCP و IP Binding'),
+            _drawerItem(_DashboardSection.dhcpBinding, Icons.devices_other_rounded, 'ربط عناوين DHCP و IP'),
             _drawerItem(_DashboardSection.system, Icons.settings_suggest_rounded, 'أدوات النظام والصيانة'),
-            _drawerItem(_DashboardSection.interfaces, Icons.settings_ethernet_rounded, 'المنافذ والفايبر و VLAN'),
-            _drawerItem(_DashboardSection.liveTorch, Icons.radar_rounded, 'Live Torch — مراقبة حيّة'),
-            _drawerItem(_DashboardSection.apiTerminal, Icons.terminal_rounded, 'CLI / API Console'),
-            _drawerItem(_DashboardSection.netwatch, Icons.monitor_heart_outlined, 'Netwatch • مراقبة WAN'),
+            _drawerItem(_DashboardSection.interfaces, Icons.settings_ethernet_rounded, 'المنافذ والألياف الضوئية وVLAN'),
+            _drawerItem(_DashboardSection.liveTorch, Icons.radar_rounded, 'مراقبة حركة الشبكة المباشرة'),
+            _drawerItem(_DashboardSection.apiTerminal, Icons.terminal_rounded, 'وحدة أوامر API'),
+            _drawerItem(_DashboardSection.netwatch, Icons.monitor_heart_outlined, 'مراقبة اتصال الإنترنت WAN'),
             _drawerItem(_DashboardSection.hotspotSales, Icons.payments_outlined, 'تقارير مبيعات الكروت'),
-            _drawerItem(_DashboardSection.ipArpDns, Icons.dns_outlined, 'IP • ARP • DNS'),
-            _drawerItem(_DashboardSection.natAddressLists, Icons.rule_folder_outlined, 'NAT • Address Lists'),
-            _drawerItem(_DashboardSection.pccWizard, Icons.device_hub_outlined, 'PCC Load Balancing Wizard'),
-            _drawerItem(_DashboardSection.bandwidthTest, Icons.speed_rounded, 'Bandwidth Test'),
+            _drawerItem(_DashboardSection.ipArpDns, Icons.dns_outlined, 'إدارة IP وARP وDNS'),
+            _drawerItem(_DashboardSection.natAddressLists, Icons.rule_folder_outlined, 'قواعد NAT وقوائم العناوين'),
+            _drawerItem(_DashboardSection.pccWizard, Icons.device_hub_outlined, 'معالج توزيع الأحمال PCC'),
+            _drawerItem(_DashboardSection.bandwidthTest, Icons.speed_rounded, 'اختبار سرعة الاتصال'),
             _drawerItem(_DashboardSection.appSettings, Icons.security_rounded, 'إعدادات التطبيق والأمان'),
             _drawerItem(_DashboardSection.remoteAccess, Icons.vpn_lock_rounded, 'الوصول الخارجي والأنفاق'),
-            _drawerItem(_DashboardSection.cgnatBypass, Icons.public_rounded, 'تجاوز CGNAT • ZeroTier / VPN'),
+            _drawerItem(_DashboardSection.cgnatBypass, Icons.public_rounded, 'تجاوز CGNAT عبر ZeroTier وVPN'),
             _drawerItem(_DashboardSection.externalSecurity, Icons.admin_panel_settings_rounded, 'الأمان الخارجي وتحويل المنافذ'),
             _drawerItem(_DashboardSection.wirelessTowers, Icons.cell_tower_rounded, 'الصحون والأبراج اللاسلكية'),
-            _drawerItem(_DashboardSection.rawQosWizard, Icons.shield_rounded, 'درع RAW وأولوية Ping / DNS'),
+            _drawerItem(_DashboardSection.rawQosWizard, Icons.shield_rounded, 'حماية RAW وأولوية Ping وDNS'),
             _drawerItem(_DashboardSection.telegramAlerts, Icons.telegram, 'تنبيهات Telegram من الراوتر'),
-            const Spacer(),
+            const SizedBox(height: 12),
             const Divider(color: Color(0xFF283142), height: 1),
             ListTile(
               leading: const Icon(Icons.router_outlined, color: _muted),
@@ -431,23 +439,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.queues: return 'الطوابير والسرعات';
       case _DashboardSection.neighbors: return 'كاشف الأجهزة والاتصالات';
       case _DashboardSection.firewall: return 'الشبكة والفايروول';
-      case _DashboardSection.dhcpBinding: return 'DHCP و IP Binding';
+      case _DashboardSection.dhcpBinding: return 'ربط عناوين DHCP و IP';
       case _DashboardSection.system: return 'أدوات النظام والصيانة';
-      case _DashboardSection.interfaces: return 'المنافذ والفايبر و VLAN';
-      case _DashboardSection.liveTorch: return 'Live Torch — مراقبة حيّة';
-      case _DashboardSection.apiTerminal: return 'CLI / API Console';
-      case _DashboardSection.netwatch: return 'Netwatch • مراقبة WAN';
+      case _DashboardSection.interfaces: return 'المنافذ والألياف الضوئية وVLAN';
+      case _DashboardSection.liveTorch: return 'مراقبة حركة الشبكة المباشرة';
+      case _DashboardSection.apiTerminal: return 'وحدة أوامر API';
+      case _DashboardSection.netwatch: return 'مراقبة اتصال الإنترنت WAN';
       case _DashboardSection.hotspotSales: return 'تقارير مبيعات الكروت';
-      case _DashboardSection.ipArpDns: return 'IP • ARP • DNS';
-      case _DashboardSection.natAddressLists: return 'NAT • Address Lists';
-      case _DashboardSection.pccWizard: return 'PCC Load Balancing Wizard';
-      case _DashboardSection.bandwidthTest: return 'Bandwidth Test';
+      case _DashboardSection.ipArpDns: return 'إدارة IP وARP وDNS';
+      case _DashboardSection.natAddressLists: return 'قواعد NAT وقوائم العناوين';
+      case _DashboardSection.pccWizard: return 'معالج توزيع الأحمال PCC';
+      case _DashboardSection.bandwidthTest: return 'اختبار سرعة الاتصال';
       case _DashboardSection.appSettings: return 'إعدادات التطبيق والأمان';
       case _DashboardSection.remoteAccess: return 'الوصول الخارجي والأنفاق';
-      case _DashboardSection.cgnatBypass: return 'تجاوز CGNAT • ZeroTier / VPN';
+      case _DashboardSection.cgnatBypass: return 'تجاوز CGNAT عبر ZeroTier وVPN';
       case _DashboardSection.externalSecurity: return 'الأمان الخارجي وتحويل المنافذ';
       case _DashboardSection.wirelessTowers: return 'الصحون والأبراج اللاسلكية';
-      case _DashboardSection.rawQosWizard: return 'درع RAW وأولوية Ping / DNS';
+      case _DashboardSection.rawQosWizard: return 'حماية RAW وأولوية Ping وDNS';
       case _DashboardSection.telegramAlerts: return 'تنبيهات Telegram من الراوتر';
       case _DashboardSection.hotspotTemplateInstaller: return 'مولّد صفحة دخول الهوتسبوت';
     }
@@ -522,7 +530,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('مراقب اليوزرات والسرعات الحي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
                           SizedBox(height: 4),
-                          Text('PPPoE + Hotspot + Simple Queues • تحديث مباشر', style: TextStyle(color: _muted, fontSize: 10)),
+                          Text('PPPoE والهوتسبوت والطوابير • تحديث مباشر', style: TextStyle(color: _muted, fontSize: 10)),
                         ])),
                         const Icon(Icons.arrow_forward_ios_rounded, color: _accent, size: 16),
                       ]),
@@ -555,7 +563,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _GaugeCard(
                       title: 'أنوية المعالج',
                       value: cores?.toString() ?? '—',
-                      subtitle: resource['cpu'] ?? resource['cpu-frequency'] ?? 'CPU cores',
+                      subtitle: resource['cpu'] ?? resource['cpu-frequency'] ?? 'أنوية المعالج',
                       icon: Icons.developer_board_rounded,
                       color: _accent,
                       progress: null,
@@ -571,7 +579,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _GaugeCard(
                       title: 'وقت التشغيل',
                       value: uptime,
-                      subtitle: 'Uptime',
+                      subtitle: 'مدة التشغيل',
                       icon: Icons.timelapse_rounded,
                       color: _rxColor,
                       progress: null,
@@ -603,7 +611,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const Row(children: [
           Icon(Icons.multiline_chart_rounded, color: _accent, size: 21),
           SizedBox(width: 8),
-          Expanded(child: Text('Live Traffic Graph', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800))),
+          Expanded(child: Text('مخطط حركة البيانات المباشر', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800))),
           Icon(Icons.wifi_tethering_rounded, color: _rxColor, size: 17),
         ]),
         const SizedBox(height: 5),
@@ -817,7 +825,7 @@ class _SystemHeader extends StatelessWidget {
             Container(width: 45, height: 45, decoration: BoxDecoration(color: _accent.withOpacity(0.18), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.router_rounded, color: _accent, size: 26)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ROUTER IDENTITY', style: TextStyle(color: _muted, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+              const Text('هوية الراوتر', style: TextStyle(color: _muted, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
               const SizedBox(height: 4),
               Text(identity, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900)),
             ])),
@@ -831,9 +839,9 @@ class _SystemHeader extends StatelessWidget {
           const Divider(color: Color(0x332D3B50), height: 1),
           const SizedBox(height: 14),
           Row(children: [
-            Expanded(child: _IdentityValue(label: 'BOARD NAME', value: boardName, icon: Icons.developer_board_outlined)),
+            Expanded(child: _IdentityValue(label: 'طراز اللوحة', value: boardName, icon: Icons.developer_board_outlined)),
             const SizedBox(width: 12),
-            Expanded(child: _IdentityValue(label: 'ROUTEROS VERSION', value: version, icon: Icons.terminal_rounded)),
+            Expanded(child: _IdentityValue(label: 'إصدار RouterOS', value: version, icon: Icons.terminal_rounded)),
           ]),
           if (host.isNotEmpty) ...[
             const SizedBox(height: 12),
