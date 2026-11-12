@@ -363,7 +363,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF292647), Color(0xFF111722)]),
+                gradient: LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF123445), Color(0xFF101B27)]),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(width: 54, height: 54, decoration: BoxDecoration(color: _accent.withOpacity(0.18), borderRadius: BorderRadius.circular(17)), child: const Icon(Icons.hub_rounded, size: 31, color: _accent)),
@@ -514,7 +514,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         gradient: const LinearGradient(
                           begin: Alignment.topRight,
                           end: Alignment.bottomLeft,
-                          colors: [Color(0xFF252044), Color(0xFF111D2A)],
+                          colors: [Color(0xFF123344), Color(0xFF111D2A)],
                         ),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(color: _accent.withOpacity(0.45)),
