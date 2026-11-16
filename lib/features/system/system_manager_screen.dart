@@ -10,7 +10,7 @@ import '../../core/providers/router_providers.dart';
 
 const _smPanel = Color(0xFF111722);
 const _smMuted = Color(0xFF8D9AB0);
-const _smAccent = Color(0xFF8B7CFF);
+const _smAccent = Color(0xFF35D7F2);
 const _smGreen = Color(0xFF43D9A3);
 const _smRed = Color(0xFFFF657A);
 const _smAmber = Color(0xFFFFB45E);
