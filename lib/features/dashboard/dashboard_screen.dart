@@ -989,24 +989,6 @@ class _NovaNavItem extends StatelessWidget {
   );
 }
 
-class _IdentityValue extends StatelessWidget {
-  const _IdentityValue({required this.label, required this.value, required this.icon});
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(icon, color: _accent, size: 13),
-          const SizedBox(width: 5),
-          Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 8, fontWeight: FontWeight.w800))),
-        ]),
-        const SizedBox(height: 6),
-        Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-      ]);
-}
-
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({required this.title, required this.subtitle});
   final String title;
