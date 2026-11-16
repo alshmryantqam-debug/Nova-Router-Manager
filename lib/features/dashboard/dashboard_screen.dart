@@ -1363,7 +1363,7 @@ class _NovaCoreHero extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Expanded(flex: 5, child: SizedBox(height: 126, child: CustomPaint(painter: _RouterHologramPainter()))),
+                Expanded(flex: 5, child: SizedBox(height: 126, child: CustomPaint(painter: _RouterHologramPainter()))),
               ],
             ),
           ),
