@@ -352,8 +352,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                                       ? const HotspotTemplateInstallerScreen()
                                                                                                       : const NetworkToolsScreen(),
       ),
+      bottomNavigationBar: Builder(builder: (navContext) => _buildNovaBottomBar(navContext)),
     );
   }
+
+  Widget _buildNovaBottomBar(BuildContext navContext) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF070D19),
+          border: Border(top: BorderSide(color: _accent.withOpacity(0.25))),
+          boxShadow: [BoxShadow(color: _accent.withOpacity(0.10), blurRadius: 18, offset: const Offset(0, -5))],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(children: [
+            _NovaNavItem(icon: Icons.home_rounded, label: 'الرئيسية', selected: _section == _DashboardSection.home, onTap: () => _selectSection(_DashboardSection.home)),
+            _NovaNavItem(icon: Icons.people_alt_rounded, label: 'المشتركين', selected: false, onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const UnifiedActiveUsersScreen()))),
+            _NovaNavItem(icon: Icons.hub_rounded, label: 'الشبكة', selected: _section == _DashboardSection.neighbors, onTap: () => _selectSection(_DashboardSection.neighbors)),
+            _NovaNavItem(icon: Icons.grid_view_rounded, label: 'المزيد', selected: false, onTap: () => Scaffold.of(navContext).openDrawer()),
+          ]),
+        ),
+      );
 
   Widget _buildDrawer(SavedRouter? activeRouter) => Drawer(
         backgroundColor: _panel,
@@ -470,29 +488,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           if (snapshot.hasError) {
             return _CenteredMessage(icon: Icons.cloud_off_rounded, title: 'تعذّر قراءة موارد الراوتر', message: _friendlyError(snapshot.error!));
           }
-
           final data = snapshot.data!;
           final resource = data.resource;
           final health = data.health;
           final cpu = _number(resource['cpu-load']);
-          final cores = int.tryParse(resource['cpu-count'] ?? '');
           final totalMemory = _number(resource['total-memory']) ?? 0;
           final freeMemory = _number(resource['free-memory']) ?? 0;
           final usedMemory = math.max(0.0, totalMemory - freeMemory).toDouble();
           final ramPercent = totalMemory > 0 ? (usedMemory / totalMemory) * 100 : null;
-          final uptime = resource['uptime'] ?? '—';
           final temperature = _firstNonEmpty([
             health['cpu-temperature'], health['temperature'], health['board-temperature1'],
             health['board-temperature'], resource['cpu-temperature'], resource['temperature'],
           ]);
           final voltage = _firstNonEmpty([health['voltage'], resource['voltage']]);
+          final visibleInterfaces = _interfaces.take(3).toList(growable: false);
 
           return RefreshIndicator(
             color: _accent,
             backgroundColor: _panel,
             onRefresh: () async => _loadInterfaces(_client!),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+              padding: const EdgeInsets.fromLTRB(13, 4, 13, 20),
               children: [
                 _SystemHeader(
                   identity: data.identity,
@@ -501,107 +517,132 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   host: ref.read(activeRouterDetailsProvider)?.host ?? '',
                 ),
                 const SizedBox(height: 12),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const UnifiedActiveUsersScreen()),
+                Container(
+                  height: 174,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(23),
+                    gradient: const RadialGradient(
+                      center: Alignment(0, -0.15),
+                      radius: 1.15,
+                      colors: [Color(0xFF103E70), Color(0xFF07172C), Color(0xFF050914)],
                     ),
-                    child: Ink(
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                          colors: [Color(0xFF123344), Color(0xFF111D2A)],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: _accent.withOpacity(0.45)),
-                      ),
-                      child: Row(children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(color: _rxColor.withOpacity(0.13), borderRadius: BorderRadius.circular(14)),
-                          child: const Icon(Icons.people_alt_rounded, color: _rxColor, size: 26),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('مراقب اليوزرات والسرعات الحي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
-                          SizedBox(height: 4),
-                          Text('PPPoE والهوتسبوت والطوابير • تحديث مباشر', style: TextStyle(color: _muted, fontSize: 10)),
-                        ])),
-                        const Icon(Icons.arrow_forward_ios_rounded, color: _accent, size: 16),
-                      ]),
-                    ),
+                    border: Border.all(color: _accent.withOpacity(0.38)),
+                    boxShadow: [BoxShadow(color: _accent.withOpacity(0.13), blurRadius: 22, spreadRadius: -5)],
                   ),
+                  child: Stack(children: [
+                    Positioned(left: -25, right: -25, bottom: -78, child: Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _accent.withOpacity(0.35), width: 2),
+                        boxShadow: [BoxShadow(color: _accent.withOpacity(0.3), blurRadius: 25)],
+                      ),
+                    )),
+                    Positioned(left: 20, right: 20, bottom: -96, child: Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF8B5CFF).withOpacity(0.45), width: 2),
+                      ),
+                    )),
+                    Positioned(top: 12, left: 14, child: Icon(Icons.hub_rounded, color: _accent.withOpacity(0.18), size: 52)),
+                    Positioned(top: 12, right: 14, child: Icon(Icons.public_rounded, color: const Color(0xFF53CFFF).withOpacity(0.22), size: 44)),
+                    Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 94, height: 57,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(13),
+                          gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF1D5F9C), Color(0xFF07182C)]),
+                          border: Border.all(color: const Color(0xFF62E9FF), width: 1.4),
+                          boxShadow: [BoxShadow(color: _accent.withOpacity(0.45), blurRadius: 24, spreadRadius: 1)],
+                        ),
+                        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.router_rounded, color: Color(0xFF8DEEFF), size: 31),
+                          Text('MikroTik', style: TextStyle(color: Colors.white, fontSize: 9, fontStyle: FontStyle.italic, fontWeight: FontWeight.w800)),
+                        ]),
+                      ),
+                      const SizedBox(height: 9),
+                      Text(data.identity, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900, shadows: [Shadow(color: _accent, blurRadius: 12)])),
+                      const SizedBox(height: 3),
+                      Text(data.boardName + '  •  RouterOS ' + data.version,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Color(0xFF9CC8E8), fontSize: 9, fontWeight: FontWeight.w600)),
+                    ])),
+                    Positioned(bottom: 10, right: 12, child: _LivePill(label: data.error == null ? 'متصل بالراوتر' : 'توجد مشكلة بالقراءة', color: data.error == null ? _rxColor : _danger)),
+                  ]),
                 ),
+                const SizedBox(height: 11),
+                Row(children: [
+                  Expanded(child: _NovaMetricTile(title: 'CPU', value: cpu == null ? '—' : cpu.toStringAsFixed(0) + '%', icon: Icons.memory_rounded, color: const Color(0xFF00D9FF), progress: cpu == null ? null : cpu / 100)),
+                  const SizedBox(width: 7),
+                  Expanded(child: _NovaMetricTile(title: 'RAM', value: ramPercent == null ? '—' : ramPercent.toStringAsFixed(0) + '%', icon: Icons.storage_rounded, color: const Color(0xFFB76BFF), progress: ramPercent == null ? null : ramPercent / 100)),
+                  const SizedBox(width: 7),
+                  Expanded(child: _NovaMetricTile(title: 'الحرارة', value: _formatSensor(temperature, '°C'), icon: Icons.thermostat_rounded, color: const Color(0xFFFF627D))),
+                  const SizedBox(width: 7),
+                  Expanded(child: _NovaMetricTile(title: 'الجهد', value: _formatSensor(voltage, 'V'), icon: Icons.bolt_rounded, color: const Color(0xFF9BFF59))),
+                ]),
                 if (data.error != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 9),
                   _NoticeBanner(color: _danger, icon: Icons.warning_amber_rounded, text: 'تعذر تحديث بعض القراءات: ' + data.error!),
                 ],
-                const SizedBox(height: 14),
-                const _SectionHeading(title: 'الموارد الحية', subtitle: 'تحديث تلقائي كل ثانية'),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+                _buildTrafficPanel(),
+                const SizedBox(height: 12),
+                Row(children: [
+                  const Expanded(child: _SectionHeading(title: 'واجهات الاتصال', subtitle: 'الحالة حسب قراءة الراوتر')),
+                  TextButton.icon(
+                    onPressed: () => _selectSection(_DashboardSection.interfaces),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                    label: const Text('كل الواجهات', style: TextStyle(fontSize: 10)),
+                  ),
+                ]),
+                if (_loadingInterfaces)
+                  const LinearProgressIndicator(color: _accent, backgroundColor: _panel)
+                else if (_interfaceError != null && _interfaces.isEmpty)
+                  _NoticeBanner(color: _danger, icon: Icons.error_outline_rounded, text: _interfaceError!)
+                else if (visibleInterfaces.isEmpty)
+                  const _NoticeBanner(color: _muted, icon: Icons.info_outline_rounded, text: 'لا توجد واجهات لعرضها.')
+                else
+                  Row(children: [
+                    for (var i = 0; i < visibleInterfaces.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 7),
+                      Expanded(child: _NovaInterfaceTile(
+                        name: visibleInterfaces[i].name,
+                        running: visibleInterfaces[i].running,
+                        selected: visibleInterfaces[i].name == _selectedInterface,
+                        onTap: () => _selectInterface(visibleInterfaces[i].name),
+                      )),
+                    ],
+                  ]),
+                const SizedBox(height: 13),
+                const _SectionHeading(title: 'الوصول السريع', subtitle: 'أدوات الإدارة الأكثر استخداماً'),
+                const SizedBox(height: 9),
                 GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 1.12,
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.91,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _GaugeCard(
-                      title: 'المعالج CPU',
-                      value: cpu == null ? '—' : cpu.toStringAsFixed(0) + '%',
-                      subtitle: cpu == null ? 'لا توجد قراءة' : 'استهلاك المعالج',
-                      icon: Icons.memory_rounded,
-                      color: const Color(0xFFFFB45E),
-                      progress: cpu == null ? null : (cpu / 100).clamp(0.0, 1.0).toDouble(),
-                    ),
-                    _GaugeCard(
-                      title: 'أنوية المعالج',
-                      value: cores?.toString() ?? '—',
-                      subtitle: resource['cpu'] ?? resource['cpu-frequency'] ?? 'أنوية المعالج',
-                      icon: Icons.developer_board_rounded,
-                      color: _accent,
-                      progress: null,
-                    ),
-                    _GaugeCard(
-                      title: 'ذاكرة RAM',
-                      value: totalMemory <= 0 ? '—' : (usedMemory / (1024 * 1024)).toStringAsFixed(0) + ' MB',
-                      subtitle: ramPercent == null ? 'لا توجد قراءة' : ramPercent.clamp(0.0, 100.0).toStringAsFixed(1) + '% مستخدمة',
-                      icon: Icons.storage_rounded,
-                      color: _txColor,
-                      progress: ramPercent == null ? null : (ramPercent / 100).clamp(0.0, 1.0).toDouble(),
-                    ),
-                    _GaugeCard(
-                      title: 'وقت التشغيل',
-                      value: uptime,
-                      subtitle: 'مدة التشغيل',
-                      icon: Icons.timelapse_rounded,
-                      color: _rxColor,
-                      progress: null,
-                      compactValue: true,
-                    ),
+                    _NovaQuickAction(icon: Icons.flash_on_rounded, title: 'Torch', color: const Color(0xFF36F2D0), onTap: () => _selectSection(_DashboardSection.liveTorch)),
+                    _NovaQuickAction(icon: Icons.speed_rounded, title: 'Ping', color: _accent, onTap: () => _selectSection(_DashboardSection.bandwidthTest)),
+                    _NovaQuickAction(icon: Icons.hub_rounded, title: 'الشبكة', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.neighbors)),
+                    _NovaQuickAction(icon: Icons.security_rounded, title: 'Firewall', color: const Color(0xFF4DABFF), onTap: () => _selectSection(_DashboardSection.firewall)),
+                    _NovaQuickAction(icon: Icons.wifi_tethering_rounded, title: 'Hotspot', color: const Color(0xFF37E5C0), onTap: () => _selectSection(_DashboardSection.hotspot)),
+                    _NovaQuickAction(icon: Icons.people_alt_rounded, title: 'PPPoE', color: const Color(0xFF5AC8FF), onTap: () => _selectSection(_DashboardSection.pppoe)),
+                    _NovaQuickAction(icon: Icons.dns_rounded, title: 'IP / DNS', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.ipArpDns)),
+                    _NovaQuickAction(icon: Icons.queue_rounded, title: 'Queues', color: const Color(0xFFFFB45E), onTap: () => _selectSection(_DashboardSection.queues)),
                   ],
                 ),
-                const SizedBox(height: 22),
-                const _SectionHeading(title: 'المراقبة الحرارية والكهربائية', subtitle: 'القيم المتاحة من /system/health'),
-                const SizedBox(height: 10),
-                Row(children: [
-                  Expanded(child: _SmallMetricCard(title: 'الحرارة', value: _formatSensor(temperature, '°C'), icon: Icons.thermostat_rounded, color: const Color(0xFFFF8A65))),
-                  const SizedBox(width: 10),
-                  Expanded(child: _SmallMetricCard(title: 'الفولتية', value: _formatSensor(voltage, 'V'), icon: Icons.bolt_rounded, color: const Color(0xFFFFD166))),
-                ]),
-                const SizedBox(height: 22),
-                _buildTrafficPanel(),
               ],
             ),
           );
         },
       );
+
 
   Widget _buildTrafficPanel() {
     return Container(
@@ -803,6 +844,133 @@ class RouterInterface {
         disabled: row['disabled'] == 'true',
         running: row['running'] == 'true',
       );
+}
+
+class _LivePill extends StatelessWidget {
+  const _LivePill({required this.label, required this.color});
+  final String label;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.45))),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(Icons.circle, color: color, size: 6), const SizedBox(width: 5),
+      Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w900)),
+    ]),
+  );
+}
+
+class _NovaMetricTile extends StatelessWidget {
+  const _NovaMetricTile({required this.title, required this.value, required this.icon, required this.color, this.progress});
+  final String title, value;
+  final IconData icon;
+  final Color color;
+  final double? progress;
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 104,
+    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+    decoration: BoxDecoration(
+      color: const Color(0xFF0A1425),
+      borderRadius: BorderRadius.circular(15),
+      border: Border.all(color: color.withOpacity(0.55)),
+      boxShadow: [BoxShadow(color: color.withOpacity(0.09), blurRadius: 12)],
+    ),
+    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(icon, color: color, size: 23),
+      const SizedBox(height: 6),
+      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFB7C8DF), fontSize: 9, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 5),
+      FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, shadows: [Shadow(color: color.withOpacity(0.7), blurRadius: 9)]))),
+      if (progress != null) ...[
+        const SizedBox(height: 6),
+        ClipRRect(borderRadius: BorderRadius.circular(9), child: LinearProgressIndicator(value: progress!.clamp(0.0, 1.0).toDouble(), minHeight: 3, backgroundColor: Colors.white12, valueColor: AlwaysStoppedAnimation<Color>(color))),
+      ],
+    ]),
+  );
+}
+
+class _NovaInterfaceTile extends StatelessWidget {
+  const _NovaInterfaceTile({required this.name, required this.running, required this.selected, required this.onTap});
+  final String name;
+  final bool running, selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B1628),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: selected ? _accent : (running ? _rxColor.withOpacity(0.4) : Colors.white12)),
+          boxShadow: selected ? [BoxShadow(color: _accent.withOpacity(0.14), blurRadius: 12)] : null,
+        ),
+        child: Column(children: [
+          Icon(Icons.language_rounded, color: running ? _rxColor : _muted, size: 20),
+          const SizedBox(height: 5),
+          Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.ltr, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(running ? 'متصل' : 'متوقف', style: TextStyle(color: running ? _rxColor : _danger, fontSize: 9, fontWeight: FontWeight.w800)),
+        ]),
+      ),
+    ),
+  );
+}
+
+class _NovaQuickAction extends StatelessWidget {
+  const _NovaQuickAction({required this.icon, required this.title, required this.color, required this.onTap});
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(15),
+      onTap: onTap,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF102747), Color(0xFF091322)]),
+          border: Border.all(color: color.withOpacity(0.55)),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.08), blurRadius: 12)],
+        ),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: color, size: 25),
+          const SizedBox(height: 7),
+          Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+        ]),
+      ),
+    ),
+  );
+}
+
+class _NovaNavItem extends StatelessWidget {
+  const _NovaNavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: selected ? _accent : const Color(0xFF8194B0), size: 22),
+          const SizedBox(height: 3),
+          Text(label, style: TextStyle(color: selected ? _accent : const Color(0xFF8194B0), fontSize: 9, fontWeight: selected ? FontWeight.w900 : FontWeight.w600)),
+        ]),
+      ),
+    ),
+  );
 }
 
 class _SystemHeader extends StatelessWidget {
