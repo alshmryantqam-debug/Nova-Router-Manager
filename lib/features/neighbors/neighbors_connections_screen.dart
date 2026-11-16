@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,7 @@ import '../../core/providers/router_providers.dart';
 
 const Color _ncPanel = Color(0xFF111722);
 const Color _ncMuted = Color(0xFF8D9AB0);
-const Color _ncAccent = Color(0xFF8B7CFF);
+const Color _ncAccent = Color(0xFF35D7F2);
 const Color _ncGreen = Color(0xFF43D9A3);
 const Color _ncBlue = Color(0xFF67B7FF);
 const Color _ncRed = Color(0xFFFF657A);
@@ -171,6 +172,7 @@ class _NeighborsConnectionsWorkspaceState extends State<NeighborsConnectionsWork
   Widget build(BuildContext context) => DefaultTabController(
     length: 2,
     child: Column(children: [
+      const NovaSectionHeader(title: 'رادار الشبكة', subtitle: 'الأجهزة المكتشفة واتصالات الجدار الناري', icon: Icons.radar_rounded),
       Container(
         margin: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         decoration: BoxDecoration(
