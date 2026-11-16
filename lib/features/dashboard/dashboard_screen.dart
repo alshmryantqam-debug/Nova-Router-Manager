@@ -68,6 +68,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _sampleIndex = 0;
   double _currentRxMbps = 0;
   double _currentTxMbps = 0;
+  bool _hasTrafficSample = false;
   String? _trafficError;
   final List<FlSpot> _rxSpots = <FlSpot>[];
   final List<FlSpot> _txSpots = <FlSpot>[];
@@ -195,6 +196,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _sampleIndex = 0;
       _currentRxMbps = 0;
       _currentTxMbps = 0;
+      _hasTrafficSample = false;
       _trafficError = null;
       _rxSpots.clear();
       _txSpots.clear();
@@ -212,6 +214,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           setState(() {
             _currentRxMbps = rx;
             _currentTxMbps = tx;
+            _hasTrafficSample = true;
             _trafficError = null;
             _rxSpots.add(FlSpot(_sampleIndex.toDouble(), rx));
             _txSpots.add(FlSpot(_sampleIndex.toDouble(), tx));
@@ -541,8 +544,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       left: 13,
                       child: _HudTag(
                         icon: Icons.radar_rounded,
-                        label: 'CORE ONLINE',
-                        color: _rxColor,
+                        label: data.error == null ? 'CORE ONLINE' : 'TELEMETRY DEGRADED',
+                        color: data.error == null ? _rxColor : _danger,
                       ),
                     ),
                     Positioned(
@@ -723,9 +726,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
         const SizedBox(height: 17),
         Row(children: [
-          Expanded(child: _TrafficValue(label: 'RX · سحب', value: _currentRxMbps, color: _rxColor)),
+          Expanded(child: _TrafficValue(label: 'RX · سحب', value: _hasTrafficSample ? _currentRxMbps.toStringAsFixed(2) + ' Mbps' : '—', color: _rxColor)),
           const SizedBox(width: 10),
-          Expanded(child: _TrafficValue(label: 'TX · رفع', value: _currentTxMbps, color: _txColor)),
+          Expanded(child: _TrafficValue(label: 'TX · رفع', value: _hasTrafficSample ? _currentTxMbps.toStringAsFixed(2) + ' Mbps' : '—', color: _txColor)),
         ]),
         const SizedBox(height: 10),
         SizedBox(
@@ -1226,7 +1229,7 @@ class _SectionHeading extends StatelessWidget {
 class _TrafficValue extends StatelessWidget {
   const _TrafficValue({required this.label, required this.value, required this.color});
   final String label;
-  final double value;
+  final String value;
   final Color color;
 
   @override
@@ -1239,7 +1242,7 @@ class _TrafficValue extends StatelessWidget {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label, style: const TextStyle(color: _muted, fontSize: 10)),
             const SizedBox(height: 3),
-            Text(value.toStringAsFixed(2) + ' Mbps', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900)),
+            Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900)),
           ])),
         ]),
       );
