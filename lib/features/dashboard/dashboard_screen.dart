@@ -531,6 +531,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     boxShadow: [BoxShadow(color: _accent.withOpacity(0.13), blurRadius: 22, spreadRadius: -5)],
                   ),
                   child: Stack(children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _CyberGridPainter(color: _accent.withOpacity(0.10)),
+                      ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      left: 13,
+                      child: _HudTag(
+                        icon: Icons.radar_rounded,
+                        label: 'CORE ONLINE',
+                        color: _rxColor,
+                      ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      right: 13,
+                      child: Text(
+                        'NOVA  /  CYBER-CORE',
+                        textDirection: TextDirection.ltr,
+                        style: TextStyle(
+                          color: _accent.withOpacity(0.72),
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.15,
+                        ),
+                      ),
+                    ),
                     Positioned(left: -25, right: -25, bottom: -78, child: Container(
                       height: 150,
                       decoration: BoxDecoration(
@@ -1194,6 +1222,99 @@ class _CenteredMessage extends StatelessWidget {
           ]),
         ),
       );
+}
+
+class _HudTag extends StatelessWidget {
+  const _HudTag({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF06111D).withOpacity(0.82),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.42)),
+          boxShadow: [
+            BoxShadow(color: color.withOpacity(0.12), blurRadius: 12),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, color: color, size: 11),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.7,
+              ),
+            ),
+          ]),
+        ),
+      );
+}
+
+class _CyberGridPainter extends CustomPainter {
+  const _CyberGridPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 0.7
+      ..style = PaintingStyle.stroke;
+
+    const gap = 24.0;
+    for (double x = 0; x <= size.width; x += gap) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y <= size.height; y += gap) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+
+    final center = Offset(size.width / 2, size.height / 2 + 8);
+    for (final radius in <double>[54, 78, 104]) {
+      canvas.drawCircle(
+        center,
+        radius,
+        paint..color = color.withOpacity(radius == 78 ? 1 : 0.55),
+      );
+    }
+    final sweep = Paint()
+      ..shader = SweepGradient(
+        colors: [
+          Colors.transparent,
+          color.withOpacity(0.05),
+          color.withOpacity(0.38),
+          Colors.transparent,
+        ],
+        stops: const [0, 0.42, 0.50, 1],
+      ).createShader(Rect.fromCircle(center: center, radius: 106))
+      ..style = PaintingStyle.fill;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 106),
+      -math.pi * 0.85,
+      math.pi * 0.78,
+      true,
+      sweep,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CyberGridPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 double? _number(String? source) {
