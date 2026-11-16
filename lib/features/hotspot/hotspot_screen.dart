@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ import 'hotspot_sales_report_screen.dart';
 const Color _hsBg = Color(0xFF080B12);
 const Color _hsPanel = Color(0xFF111722);
 const Color _hsMuted = Color(0xFF8D9AB0);
-const Color _hsAccent = Color(0xFF8B7CFF);
+const Color _hsAccent = Color(0xFF35D7F2);
 const Color _hsGreen = Color(0xFF43D9A3);
 const Color _hsRed = Color(0xFFFF657A);
 const Color _hsBlue = Color(0xFF67B7FF);
@@ -45,6 +46,7 @@ class HotspotWorkspaceConnected extends StatelessWidget {
       length: 6,
       child: Column(
         children: [
+          const NovaSectionHeader(title: 'إدارة الهوتسبوت', subtitle: 'البطاقات والمستخدمون والجلسات والمبيعات من الراوتر مباشرة', icon: Icons.wifi_tethering_rounded),
           Container(
             color: _hsBg,
             child: const TabBar(
