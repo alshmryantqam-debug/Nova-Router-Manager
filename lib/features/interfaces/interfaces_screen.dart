@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/nova_section_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/router_providers.dart';
@@ -6,7 +7,7 @@ import 'interfaces_service.dart';
 
 const Color _interfaceBg = Color(0xFF080B12);
 const Color _interfacePanel = Color(0xFF111722);
-const Color _interfaceAccent = Color(0xFF8B7CFF);
+const Color _interfaceAccent = Color(0xFF35D7F2);
 const Color _interfaceMuted = Color(0xFF8D9AB0);
 
 class InterfacesScreen extends ConsumerStatefulWidget {
@@ -298,10 +299,9 @@ class _InterfacesScreenState extends ConsumerState<InterfacesScreen> with Single
     }),
   ]));
 
-  Widget _sectionHeader(String title, String subtitle) => Padding(padding: const EdgeInsets.fromLTRB(4, 8, 4, 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(title, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-    const SizedBox(height: 3), Text(subtitle, style: const TextStyle(color: _interfaceMuted, fontSize: 11)),
-  ]));
+  Widget _sectionHeader(String title, String subtitle) => NovaSectionHeader(
+    title: title, subtitle: subtitle, icon: Icons.hub_rounded,
+  );
 
   Widget _stateChip(String text, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
     decoration: BoxDecoration(color: color.withOpacity(.13), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(.4))),
