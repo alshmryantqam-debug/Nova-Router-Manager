@@ -895,26 +895,55 @@ class _NovaMetricTile extends StatelessWidget {
   final IconData icon;
   final Color color;
   final double? progress;
+
   @override
   Widget build(BuildContext context) => Container(
-    height: 104,
-    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+    height: 116,
+    padding: const EdgeInsets.fromLTRB(9, 11, 9, 9),
     decoration: BoxDecoration(
-      color: const Color(0xFF0A1425),
-      borderRadius: BorderRadius.circular(15),
-      border: Border.all(color: color.withOpacity(0.55)),
-      boxShadow: [BoxShadow(color: color.withOpacity(0.09), blurRadius: 12)],
-    ),
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(icon, color: color, size: 23),
-      const SizedBox(height: 6),
-      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFB7C8DF), fontSize: 9, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 5),
-      FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900, shadows: [Shadow(color: color.withOpacity(0.7), blurRadius: 9)]))),
-      if (progress != null) ...[
-        const SizedBox(height: 6),
-        ClipRRect(borderRadius: BorderRadius.circular(9), child: LinearProgressIndicator(value: progress!.clamp(0.0, 1.0).toDouble(), minHeight: 3, backgroundColor: Colors.white12, valueColor: AlwaysStoppedAnimation<Color>(color))),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [color.withOpacity(0.13), const Color(0xFF0A1220), const Color(0xFF080E18)],
+      ),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: color.withOpacity(0.32)),
+      boxShadow: [
+        BoxShadow(color: color.withOpacity(0.10), blurRadius: 18, spreadRadius: -5),
+        const BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5)),
       ],
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Container(
+          width: 29, height: 29,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.13),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withOpacity(0.24)),
+          ),
+          child: Icon(icon, color: color, size: 17),
+        ),
+        const Spacer(),
+        Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(0.7), blurRadius: 7)])),
+      ]),
+      const Spacer(),
+      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: Color(0xFF9AABC2), fontSize: 9, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 3),
+      FittedBox(fit: BoxFit.scaleDown, child: Text(value,
+        style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900,
+          shadows: [Shadow(color: color.withOpacity(0.48), blurRadius: 10)]))),
+      const SizedBox(height: 7),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: LinearProgressIndicator(
+          value: progress?.clamp(0.0, 1.0).toDouble(),
+          minHeight: 3,
+          backgroundColor: Colors.white.withOpacity(0.07),
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+        ),
+      ),
     ]),
   );
 }
@@ -956,23 +985,44 @@ class _NovaQuickAction extends StatelessWidget {
   final String title;
   final Color color;
   final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) => Material(
     color: Colors.transparent,
     child: InkWell(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF102747), Color(0xFF091322)]),
-          border: Border.all(color: color.withOpacity(0.55)),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.08), blurRadius: 12)],
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF15253B), Color(0xFF0A1220), Color(0xFF080D16)],
+          ),
+          border: Border.all(color: color.withOpacity(0.25)),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.07), blurRadius: 16, spreadRadius: -4)],
         ),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 25),
-          const SizedBox(height: 7),
-          Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+        child: Stack(children: [
+          Positioned(top: -18, right: -16, child: Container(
+            width: 58, height: 58,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color.withOpacity(0.055)),
+          )),
+          Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 43, height: 43,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.11),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: color.withOpacity(0.25)),
+                boxShadow: [BoxShadow(color: color.withOpacity(0.10), blurRadius: 12)],
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFFE5F0FC), fontSize: 9, fontWeight: FontWeight.w800)),
+          ])),
         ]),
       ),
     ),
@@ -985,17 +1035,38 @@ class _NovaNavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) => Expanded(
     child: InkWell(
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: selected ? _accent : const Color(0xFF8194B0), size: 22),
-          const SizedBox(height: 3),
-          Text(label, style: TextStyle(color: selected ? _accent : const Color(0xFF8194B0), fontSize: 9, fontWeight: selected ? FontWeight.w900 : FontWeight.w600)),
-        ]),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 3),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 190),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          decoration: BoxDecoration(
+            color: selected ? _accent.withOpacity(0.10) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: selected ? _accent.withOpacity(0.22) : Colors.transparent),
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, color: selected ? _accent : const Color(0xFF8194B0), size: 21),
+            const SizedBox(height: 3),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: selected ? _accent : const Color(0xFF8194B0), fontSize: 9,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w600)),
+            const SizedBox(height: 3),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 190),
+              width: selected ? 15 : 4,
+              height: 2,
+              decoration: BoxDecoration(color: selected ? _accent : Colors.transparent, borderRadius: BorderRadius.circular(4)),
+            ),
+          ]),
+        ),
       ),
     ),
   );
