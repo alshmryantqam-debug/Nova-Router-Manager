@@ -49,7 +49,7 @@ class PppoeSubscriber {
   final String maxLimit;
 
   DateTime? get expiry {
-    final match = RegExp(r'(?:^|\\s)EXP:(\\d{4}-\\d{2}-\\d{2})').firstMatch(comment);
+    final match = RegExp(r'(?:^|\s)EXP:(\d{4}-\d{2}-\d{2})').firstMatch(comment);
     if (match == null) return null;
     return DateTime.tryParse(match.group(1)!);
   }
@@ -221,9 +221,12 @@ class PppoeProService {
     final base = current != null && !current.isBefore(DateTime(now.year, now.month, now.day))
         ? current
         : now;
-    final next = DateTime(base.year, base.month + 1, base.day);
+    final firstOfNextMonth = DateTime(base.year, base.month + 1, 1);
+    final lastDayOfNextMonth = DateTime(firstOfNextMonth.year, firstOfNextMonth.month + 1, 0).day;
+    final next = DateTime(firstOfNextMonth.year, firstOfNextMonth.month,
+        base.day > lastDayOfNextMonth ? lastDayOfNextMonth : base.day);
     final date = '${next.year.toString().padLeft(4, '0')}-${next.month.toString().padLeft(2, '0')}-${next.day.toString().padLeft(2, '0')}';
-    final withoutExpiry = subscriber.comment.replaceAll(RegExp(r'(?:^|\\s)EXP:\\d{4}-\\d{2}-\\d{2}'), '').trim();
+    final withoutExpiry = subscriber.comment.replaceAll(RegExp(r'(?:^|\s)EXP:\d{4}-\d{2}-\d{2}'), '').trim();
     final comment = [if (withoutExpiry.isNotEmpty) withoutExpiry, 'EXP:$date'].join(' ');
     await client.verifiedCommand('/ppp/secret/set', args: {'.id': subscriber.id, 'comment': comment});
   }
