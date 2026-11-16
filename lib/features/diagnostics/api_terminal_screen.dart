@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -192,6 +193,7 @@ class _ApiTerminalScreenState extends ConsumerState<ApiTerminalScreen> {
         ],
       ),
       body: Column(children: [
+        NovaSectionHeader(title: 'وحدة أوامر RouterOS', subtitle: 'تنفيذ أوامر API ومراجعة الردود وسجل الجلسة', icon: Icons.terminal_rounded),
         Container(
           margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           padding: const EdgeInsets.all(12),
