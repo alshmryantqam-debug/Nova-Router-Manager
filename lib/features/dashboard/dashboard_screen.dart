@@ -513,17 +513,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(13, 4, 13, 20),
               children: [
-                _SystemHeader(
-                  identity: data.identity,
-                  boardName: data.boardName,
-                  version: data.version,
-                  host: ref.read(activeRouterDetailsProvider)?.host ?? '',
-                ),
-                const SizedBox(height: 12),
                 _NovaCoreHero(
                   identity: data.identity,
                   boardName: data.boardName,
                   version: data.version,
+                  host: ref.read(activeRouterDetailsProvider)?.host ?? '',
                   degraded: data.error != null,
                   uptime: resource['uptime'] ?? '—',
                   cpuCount: resource['cpu-count'] ?? '—',
@@ -1278,6 +1272,7 @@ class _NovaCoreHero extends StatelessWidget {
     required this.identity,
     required this.boardName,
     required this.version,
+    required this.host,
     required this.degraded,
     required this.uptime,
     required this.cpuCount,
@@ -1287,6 +1282,7 @@ class _NovaCoreHero extends StatelessWidget {
   final String identity;
   final String boardName;
   final String version;
+  final String host;
   final bool degraded;
   final String uptime;
   final String cpuCount;
@@ -1355,6 +1351,15 @@ class _NovaCoreHero extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text('RouterOS  $version', textDirection: TextDirection.ltr,
                         style: const TextStyle(color: Color(0xFF819BB7), fontSize: 9)),
+                      if (host.isNotEmpty) ...[
+                        const SizedBox(height: 7),
+                        Row(children: [
+                          const Icon(Icons.lan_rounded, color: _accent, size: 11),
+                          const SizedBox(width: 5),
+                          Flexible(child: Text(host, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Color(0xFF91A7C2), fontSize: 9, fontWeight: FontWeight.w700))),
+                        ]),
+                      ],
                     ],
                   ),
                 ),
