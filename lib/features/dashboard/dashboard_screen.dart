@@ -937,12 +937,14 @@ class _NovaMetricTile extends StatelessWidget {
       const SizedBox(height: 7),
       ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: LinearProgressIndicator(
-          value: progress?.clamp(0.0, 1.0).toDouble(),
-          minHeight: 3,
-          backgroundColor: Colors.white.withOpacity(0.07),
-          valueColor: AlwaysStoppedAnimation<Color>(color),
-        ),
+        child: progress == null
+            ? Container(height: 3, color: Colors.white.withOpacity(0.07))
+            : LinearProgressIndicator(
+                value: progress!.clamp(0.0, 1.0).toDouble(),
+                minHeight: 3,
+                backgroundColor: Colors.white.withOpacity(0.07),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
       ),
     ]),
   );
