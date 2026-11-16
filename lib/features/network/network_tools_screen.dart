@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,7 @@ import '../../core/providers/router_providers.dart';
 
 const Color _nPanel = Color(0xFF111722);
 const Color _nMuted = Color(0xFF8D9AB0);
-const Color _nAccent = Color(0xFF8B7CFF);
+const Color _nAccent = Color(0xFF35D7F2);
 const Color _nGreen = Color(0xFF43D9A3);
 const Color _nRed = Color(0xFFFF657A);
 const Color _nAmber = Color(0xFFFFB45E);
@@ -33,6 +34,7 @@ class NetworkToolsWorkspace extends StatelessWidget {
   Widget build(BuildContext context) => DefaultTabController(
         length: 3,
         child: Column(children: [
+          const NovaSectionHeader(title: 'مركز الشبكة', subtitle: 'المسارات وWAN والجدار الناري وأدوات التشخيص', icon: Icons.hub_rounded),
           Container(
             color: const Color(0xFF080B12),
             child: const TabBar(
