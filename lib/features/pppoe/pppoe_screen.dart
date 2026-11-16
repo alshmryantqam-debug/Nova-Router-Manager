@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,7 @@ import 'pppoe_pro_service.dart';
 const Color _ppBg = Color(0xFF080B12);
 const Color _ppPanel = Color(0xFF111722);
 const Color _ppMuted = Color(0xFF8D9AB0);
-const Color _ppAccent = Color(0xFF8B7CFF);
+const Color _ppAccent = Color(0xFF35D7F2);
 const Color _ppGreen = Color(0xFF43D9A3);
 const Color _ppRed = Color(0xFFFF657A);
 
@@ -329,14 +330,12 @@ class _PppoeWorkspaceState extends State<PppoeWorkspace> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 32),
         children: [
-          Row(children: [
-            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('إدارة البرودباند', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
-              SizedBox(height: 3),
-              Text('لوحة موحّدة للمشتركين والجلسات والطوابير', style: TextStyle(color: _ppMuted, fontSize: 11)),
-            ])),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: _ppAccent), tooltip: 'تحديث'),
-          ]),
+          NovaSectionHeader(
+            title: 'إدارة البرودباند',
+            subtitle: 'حسابات PPPoE والجلسات والسرعات والحالة الفعلية',
+            icon: Icons.people_alt_rounded,
+            trailing: IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: novaCyberCyan), tooltip: 'تحديث'),
+          ),
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _stat('إجمالي', '${_subscribers.length}', _ppAccent)),
