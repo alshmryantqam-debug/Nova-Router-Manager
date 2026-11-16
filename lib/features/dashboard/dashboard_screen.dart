@@ -1122,64 +1122,6 @@ class _SectionHeading extends StatelessWidget {
       ]);
 }
 
-class _GaugeCard extends StatelessWidget {
-  const _GaugeCard({required this.title, required this.value, required this.subtitle, required this.icon, required this.color, required this.progress, this.compactValue = false});
-  final String title;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final double? progress;
-  final bool compactValue;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(19), border: Border.all(color: Colors.white.withOpacity(0.06))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(width: 30, height: 30, decoration: BoxDecoration(color: color.withOpacity(0.13), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 17)),
-            const SizedBox(width: 7),
-            Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 10, fontWeight: FontWeight.w700))),
-          ]),
-          const Spacer(),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white, fontSize: compactValue ? 18 : 25, fontWeight: FontWeight.w900, letterSpacing: -0.4)),
-          const SizedBox(height: 6),
-          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 9)),
-          if (progress != null) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(value: progress!.clamp(0.0, 1.0).toDouble(), minHeight: 4, backgroundColor: Colors.white.withOpacity(0.07), valueColor: AlwaysStoppedAnimation<Color>(color)),
-            ),
-          ],
-        ]),
-      );
-}
-
-class _SmallMetricCard extends StatelessWidget {
-  const _SmallMetricCard({required this.title, required this.value, required this.icon, required this.color});
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(0.06))),
-        child: Row(children: [
-          Container(width: 37, height: 37, decoration: BoxDecoration(color: color.withOpacity(0.13), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 21)),
-          const SizedBox(width: 11),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(color: _muted, fontSize: 11)),
-            const SizedBox(height: 5),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-          ])),
-        ]),
-      );
-}
-
 class _TrafficValue extends StatelessWidget {
   const _TrafficValue({required this.label, required this.value, required this.color});
   final String label;
