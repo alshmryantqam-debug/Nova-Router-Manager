@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../core/widgets/nova_section_header.dart';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -12,7 +13,7 @@ import 'app_security_service.dart';
 const Color _settingsBg = Color(0xFF080B12);
 const Color _settingsPanel = Color(0xFF111722);
 const Color _settingsMuted = Color(0xFF8D9AB0);
-const Color _settingsAccent = Color(0xFF8B7CFF);
+const Color _settingsAccent = Color(0xFF35D7F2);
 const Color _settingsGreen = Color(0xFF43D9A3);
 const Color _settingsRed = Color(0xFFFF657A);
 
@@ -281,6 +282,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
       body: _loading
         ? const Center(child: CircularProgressIndicator(color: _settingsAccent))
         : ListView(padding: const EdgeInsets.all(14), children: [
+          const NovaSectionHeader(title: 'إعدادات NOVA', subtitle: 'الأمان والنسخ الاحتياطي وسلوك تحديث لوحة القيادة', icon: Icons.tune_rounded),
           _panel(title: 'قفل التطبيق App Security Lock', child: Column(children: [
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
