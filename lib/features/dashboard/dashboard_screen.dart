@@ -351,8 +351,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                                   : _section == _DashboardSection.hotspotTemplateInstaller
                                                                                                       ? const HotspotTemplateInstallerScreen()
                                                                                                       : const NetworkToolsScreen(),
-      ),
       bottomNavigationBar: Builder(builder: (navContext) => _buildNovaBottomBar(navContext)),
+      ),
     );
   }
 
