@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ import '../../core/providers/router_providers.dart';
 
 const Color _torchBg = Color(0xFF080B12);
 const Color _torchPanel = Color(0xFF111722);
-const Color _torchAccent = Color(0xFF8B7CFF);
+const Color _torchAccent = Color(0xFF35D7F2);
 const Color _torchMuted = Color(0xFF8D9AB0);
 const Color _torchRx = Color(0xFF43D9A3);
 const Color _torchTx = Color(0xFF67B7FF);
@@ -307,6 +308,7 @@ class _LiveTorchScreenState extends ConsumerState<LiveTorchScreen> {
         ],
       ),
       body: Column(children: [
+        NovaSectionHeader(title: 'الرصد الحي للترافيك', subtitle: 'تحليل التدفقات حسب المنفذ وعناوين المصدر والوجهة', icon: Icons.radar_rounded),
         Container(
           margin: const EdgeInsets.fromLTRB(12, 4, 12, 10),
           padding: const EdgeInsets.all(14),
