@@ -814,44 +814,112 @@ class _SystemHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(18),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF292647), Color(0xFF172131), Color(0xFF111722)]),
-          border: Border.all(color: _accent.withOpacity(0.27)),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Container(width: 45, height: 45, decoration: BoxDecoration(color: _accent.withOpacity(0.18), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.router_rounded, color: _accent, size: 26)),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('هوية الراوتر', style: TextStyle(color: _muted, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-              const SizedBox(height: 4),
-              Text(identity, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900)),
-            ])),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-              decoration: BoxDecoration(color: _rxColor.withOpacity(0.12), borderRadius: BorderRadius.circular(9)),
-              child: const Row(children: [Icon(Icons.circle, size: 6, color: _rxColor), SizedBox(width: 5), Text('LIVE', style: TextStyle(color: _rxColor, fontSize: 9, fontWeight: FontWeight.w900))]),
-            ),
-          ]),
-          const SizedBox(height: 17),
-          const Divider(color: Color(0x332D3B50), height: 1),
-          const SizedBox(height: 14),
-          Row(children: [
-            Expanded(child: _IdentityValue(label: 'طراز اللوحة', value: boardName, icon: Icons.developer_board_outlined)),
-            const SizedBox(width: 12),
-            Expanded(child: _IdentityValue(label: 'إصدار RouterOS', value: version, icon: Icons.terminal_rounded)),
-          ]),
-          if (host.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Row(children: [
-              const Icon(Icons.link_rounded, color: _muted, size: 14),
-              const SizedBox(width: 6),
-              Expanded(child: Text(host, textDirection: TextDirection.ltr, style: const TextStyle(color: _muted, fontSize: 11))),
-            ]),
+          borderRadius: BorderRadius.circular(26),
+          gradient: const LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [Color(0xFF172D49), Color(0xFF101B30), Color(0xFF090F1C)],
+          ),
+          border: Border.all(color: _accent.withOpacity(0.42)),
+          boxShadow: [
+            BoxShadow(color: _accent.withOpacity(0.10), blurRadius: 28, spreadRadius: -8),
+            BoxShadow(color: const Color(0xFF8B5CFF).withOpacity(0.08), blurRadius: 34, offset: const Offset(-8, 12)),
           ],
-        ]),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -62,
+              right: -34,
+              child: Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _accent.withOpacity(0.13), width: 1.2),
+                  boxShadow: [BoxShadow(color: _accent.withOpacity(0.13), blurRadius: 38, spreadRadius: 8)],
+                ),
+              ),
+            ),
+            Positioned(
+              top: -37,
+              right: -9,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF8B5CFF).withOpacity(0.18), width: 1.2),
+                ),
+                child: Icon(Icons.hub_rounded, size: 76, color: _accent.withOpacity(0.10)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(17, 17, 17, 16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Row(children: [
+                  Container(
+                    width: 43,
+                    height: 43,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF20DFFF), Color(0xFF5865FF)]),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [BoxShadow(color: _accent.withOpacity(0.32), blurRadius: 18)],
+                    ),
+                    child: const Icon(Icons.router_rounded, color: Color(0xFF06111E), size: 25),
+                  ),
+                  const SizedBox(width: 11),
+                  const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('NOVA', style: TextStyle(color: Colors.white, fontSize: 19, height: 1, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
+                    SizedBox(height: 5),
+                    Text('NETWORK COMMAND CORE', style: TextStyle(color: Color(0xFF78DFF5), fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1.15)),
+                  ])),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: _rxColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: _rxColor.withOpacity(0.42)),
+                    ),
+                    child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.circle, size: 7, color: _rxColor),
+                      SizedBox(width: 6),
+                      Text('CONNECTED', style: TextStyle(color: _rxColor, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.7)),
+                    ]),
+                  ),
+                ]),
+                const SizedBox(height: 22),
+                const Text('مركز قيادة الشبكة', style: TextStyle(color: Color(0xFF9CAFC8), fontSize: 10, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 5),
+                Text(
+                  identity,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: 0.2),
+                ),
+                const SizedBox(height: 15),
+                Container(height: 1, color: _accent.withOpacity(0.18)),
+                const SizedBox(height: 13),
+                Row(children: [
+                  Expanded(child: _IdentityValue(label: 'طراز اللوحة', value: boardName, icon: Icons.developer_board_rounded)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _IdentityValue(label: 'إصدار RouterOS', value: version, icon: Icons.terminal_rounded)),
+                ]),
+                if (host.isNotEmpty) ...[
+                  const SizedBox(height: 13),
+                  Row(children: [
+                    Icon(Icons.language_rounded, color: _accent.withOpacity(0.85), size: 14),
+                    const SizedBox(width: 7),
+                    Expanded(child: Text(host, textDirection: TextDirection.ltr, style: const TextStyle(color: Color(0xFF91A7C2), fontSize: 10, fontWeight: FontWeight.w600))),
+                    const Icon(Icons.wifi_tethering_rounded, color: _rxColor, size: 16),
+                  ]),
+                ],
+              ]),
+            ),
+          ],
+        ),
       );
 }
 
