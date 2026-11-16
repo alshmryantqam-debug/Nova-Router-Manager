@@ -369,9 +369,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           top: false,
           child: Row(children: [
             _NovaNavItem(icon: Icons.home_rounded, label: 'الرئيسية', selected: _section == _DashboardSection.home, onTap: () => _selectSection(_DashboardSection.home)),
-            _NovaNavItem(icon: Icons.people_alt_rounded, label: 'المشتركين', selected: false, onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const UnifiedActiveUsersScreen()))),
-            _NovaNavItem(icon: Icons.hub_rounded, label: 'الشبكة', selected: _section == _DashboardSection.neighbors, onTap: () => _selectSection(_DashboardSection.neighbors)),
-            _NovaNavItem(icon: Icons.grid_view_rounded, label: 'المزيد', selected: false, onTap: () => Scaffold.of(navContext).openDrawer()),
+            _NovaNavItem(icon: Icons.people_alt_rounded, label: 'المشتركين', selected: _section == _DashboardSection.hotspot || _section == _DashboardSection.pppoe || _section == _DashboardSection.hotspotSales, onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const UnifiedActiveUsersScreen()))),
+            _NovaNavItem(icon: Icons.hub_rounded, label: 'الشبكة', selected: _section == _DashboardSection.neighbors || _section == _DashboardSection.interfaces || _section == _DashboardSection.netwatch || _section == _DashboardSection.wirelessTowers || _section == _DashboardSection.liveTorch, onTap: () => _selectSection(_DashboardSection.neighbors)),
+            _NovaNavItem(icon: Icons.grid_view_rounded, label: 'المزيد', selected: !const {_DashboardSection.home, _DashboardSection.hotspot, _DashboardSection.pppoe, _DashboardSection.hotspotSales, _DashboardSection.neighbors, _DashboardSection.interfaces, _DashboardSection.netwatch, _DashboardSection.wirelessTowers, _DashboardSection.liveTorch}.contains(_section), onTap: () => Scaffold.of(navContext).openDrawer()),
           ]),
         ),
       );
@@ -605,15 +605,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ]),
                 ),
                 const SizedBox(height: 11),
-                Row(children: [
-                  Expanded(child: _NovaMetricTile(title: 'CPU', value: cpu == null ? '—' : cpu.toStringAsFixed(0) + '%', icon: Icons.memory_rounded, color: const Color(0xFF00D9FF), progress: cpu == null ? null : cpu / 100)),
-                  const SizedBox(width: 7),
-                  Expanded(child: _NovaMetricTile(title: 'RAM', value: ramPercent == null ? '—' : ramPercent.toStringAsFixed(0) + '%', icon: Icons.storage_rounded, color: const Color(0xFFB76BFF), progress: ramPercent == null ? null : ramPercent / 100)),
-                  const SizedBox(width: 7),
-                  Expanded(child: _NovaMetricTile(title: 'الحرارة', value: _formatSensor(temperature, '°C'), icon: Icons.thermostat_rounded, color: const Color(0xFFFF627D))),
-                  const SizedBox(width: 7),
-                  Expanded(child: _NovaMetricTile(title: 'الجهد', value: _formatSensor(voltage, 'V'), icon: Icons.bolt_rounded, color: const Color(0xFF9BFF59))),
-                ]),
+                LayoutBuilder(builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 390;
+                  return GridView.count(
+                    crossAxisCount: compact ? 2 : 4,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: compact ? 1.48 : 0.76,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _NovaMetricTile(title: 'CPU', value: cpu == null ? '—' : cpu.toStringAsFixed(0) + '%', icon: Icons.memory_rounded, color: const Color(0xFF00D9FF), progress: cpu == null ? null : cpu / 100),
+                      _NovaMetricTile(title: 'RAM', value: ramPercent == null ? '—' : ramPercent.toStringAsFixed(0) + '%', icon: Icons.storage_rounded, color: const Color(0xFFB76BFF), progress: ramPercent == null ? null : ramPercent / 100),
+                      _NovaMetricTile(title: 'الحرارة', value: _formatSensor(temperature, '°C'), icon: Icons.thermostat_rounded, color: const Color(0xFFFF627D)),
+                      _NovaMetricTile(title: 'الجهد', value: _formatSensor(voltage, 'V'), icon: Icons.bolt_rounded, color: const Color(0xFF9BFF59)),
+                    ],
+                  );
+                }),
                 if (data.error != null) ...[
                   const SizedBox(height: 9),
                   _NoticeBanner(color: _danger, icon: Icons.warning_amber_rounded, text: 'تعذر تحديث بعض القراءات: ' + data.error!),
