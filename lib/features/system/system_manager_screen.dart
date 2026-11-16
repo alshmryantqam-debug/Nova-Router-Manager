@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/widgets/nova_section_header.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +34,7 @@ class SystemManagerWorkspace extends StatelessWidget {
   Widget build(BuildContext context) => DefaultTabController(
         length: 3,
         child: Column(children: [
+          const NovaSectionHeader(title: 'مركز أدوات النظام', subtitle: 'السكريبتات والمهام المجدولة والصيانة على RouterOS', icon: Icons.settings_suggest_rounded),
           Container(
             color: const Color(0xFF080B12),
             child: const TabBar(
