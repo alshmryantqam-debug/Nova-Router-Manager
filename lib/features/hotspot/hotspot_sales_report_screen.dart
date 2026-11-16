@@ -7,7 +7,7 @@ import '../../core/providers/router_providers.dart';
 const Color _salesBg = Color(0xFF080B12);
 const Color _salesPanel = Color(0xFF111722);
 const Color _salesMuted = Color(0xFF8D9AB0);
-const Color _salesAccent = Color(0xFF8B7CFF);
+const Color _salesAccent = Color(0xFF35D7F2);
 const Color _salesGreen = Color(0xFF43D9A3);
 const Color _salesRed = Color(0xFFFF657A);
 
