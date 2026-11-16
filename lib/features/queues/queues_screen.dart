@@ -1,4 +1,5 @@
 import '../../core/network/routeros_verified_client.dart';
+import '../../core/widgets/nova_section_header.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,7 +10,7 @@ import '../../core/providers/router_providers.dart';
 
 const Color _qPanel = Color(0xFF111722);
 const Color _qMuted = Color(0xFF8D9AB0);
-const Color _qAccent = Color(0xFF8B7CFF);
+const Color _qAccent = Color(0xFF35D7F2);
 const Color _qGreen = Color(0xFF43D9A3);
 const Color _qRed = Color(0xFFFF657A);
 const Color _qBlue = Color(0xFF67B7FF);
@@ -314,6 +315,7 @@ class _QueuesWorkspaceState extends State<QueuesWorkspace> {
   Widget build(BuildContext context) => DefaultTabController(
         length: 2,
         child: Column(children: [
+          const NovaSectionHeader(title: 'مركز إدارة السرعات', subtitle: 'Simple Queues وQueue Tree وPCQ وإحصاءات الاستخدام', icon: Icons.speed_rounded),
           Container(
             margin: const EdgeInsets.fromLTRB(14, 10, 14, 8),
             decoration: BoxDecoration(color: _qPanel, borderRadius: BorderRadius.circular(13),
