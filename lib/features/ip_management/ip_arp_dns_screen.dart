@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/nova_section_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/router_providers.dart';
@@ -7,7 +8,7 @@ import 'ip_arp_dns_service.dart';
 const Color _ipBg = Color(0xFF080B12);
 const Color _ipPanel = Color(0xFF111722);
 const Color _ipMuted = Color(0xFF8D9AB0);
-const Color _ipAccent = Color(0xFF8B7CFF);
+const Color _ipAccent = Color(0xFF35D7F2);
 const Color _ipGreen = Color(0xFF43D9A3);
 const Color _ipRed = Color(0xFFFF657A);
 
@@ -247,6 +248,7 @@ class _IpArpDnsScreenState extends ConsumerState<IpArpDnsScreen> with SingleTick
         ]),
       ),
       body:_loading?const Center(child:CircularProgressIndicator(color:_ipAccent)):Column(children:[
+        const NovaSectionHeader(title: 'إدارة عناوين الشبكة', subtitle: 'IP وARP وDNS ومجمعات العناوين', icon: Icons.lan_rounded),
         if(_error!=null)Container(width:double.infinity,padding:const EdgeInsets.all(10),color:const Color(0xFF3A1721),child:Text(_error!,style:const TextStyle(color:_ipRed,fontSize:12))),
         Expanded(child:TabBarView(controller:_tabs,children:[
           _addressesTab(),_arpTab(),_dnsTab(),_poolsTab(),
