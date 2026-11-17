@@ -6,8 +6,6 @@ import 'package:nova_router_manager/core/network/routeros_client.dart';
 import 'package:nova_router_manager/core/network/routeros_verified_client.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   test('DHCP make-static is confirmed only after the lease becomes static', () async {
     await _runMakeStaticScenario(applyChange: true);
   });
