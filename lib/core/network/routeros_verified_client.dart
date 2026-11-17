@@ -15,7 +15,7 @@ extension VerifiedRouterOsCommands on RouterOsClient {
     final parts = path.split('/');
     final action = parts.removeLast();
     final base = parts.join('/');
-    if (!const <String>{'add', 'set', 'remove', 'enable', 'disable'}.contains(action)) {
+    if (!const <String>{'add', 'set', 'remove', 'enable', 'disable', 'make-static'}.contains(action)) {
       throw ArgumentError.value(path, 'path', 'Unsupported verified mutation');
     }
 
@@ -30,6 +30,7 @@ extension VerifiedRouterOsCommands on RouterOsClient {
       ..remove('numbers')
       ..remove('id')
       ..remove('place-before');
+    if (action == 'make-static') expected['dynamic'] = 'false';
     var writePath = path;
     final operation = action == 'remove'
         ? VerifiedOperation.remove

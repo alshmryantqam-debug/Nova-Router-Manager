@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/routeros_client.dart';
+import '../../core/network/routeros_verified_client.dart';
 import '../../core/providers/router_providers.dart';
 
 const _accent = Color(0xFF8B7CFF);
@@ -65,7 +66,7 @@ class _LeasesState extends State<_Leases> {
     if (id.isEmpty || _busy.contains(id)) return;
     setState(() => _busy.add(id));
     try {
-      await widget.client.command('/ip/dhcp-server/lease/' + operation, args: {if (operation == 'make-static') 'numbers': id else '.id': id, ...args});
+      await widget.client.verifiedCommand('/ip/dhcp-server/lease/$operation', args: {if (operation == 'make-static') 'numbers': id else '.id': id, ...args});
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success)));
       await _load();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendly(e)), backgroundColor: _red)); }
@@ -84,6 +85,10 @@ class _LeasesState extends State<_Leases> {
     ));
     controller.dispose();
     if (result == null) return;
+    if (_isRouterTrue(row['dynamic'])) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ثبّت عنوان IP أولاً قبل تحديد السرعة.')));
+      return;
+    }
     if (result.isNotEmpty && !RegExp(r'^\d+(?:\.\d+)?[kKmMgG]?(?:/\d+(?:\.\d+)?[kKmMgG]?)?$').hasMatch(result)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('صيغة السرعة غير صحيحة، مثال 5M/20M'), backgroundColor: _red)); return;
     }
@@ -105,8 +110,8 @@ class _LeasesState extends State<_Leases> {
       ...rows.map((r) {
         final id = r['.id'] ?? '';
         final busy = _busy.contains(id);
-        final dynamicLease = r['dynamic'] == 'true';
-        final blocked = r['block-access'] == 'yes' || r['block-access'] == 'true';
+        final dynamicLease = _isRouterTrue(r['dynamic']);
+        final blocked = _isRouterTrue(r['block-access']);
         final name = (r['host-name'] ?? '').isEmpty ? 'جهاز بدون اسم' : r['host-name']!;
         return Card(color: _panel, child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -115,7 +120,7 @@ class _LeasesState extends State<_Leases> {
           if ((r['server'] ?? '').isNotEmpty) Text('Server: ' + r['server']!, style: const TextStyle(color: _muted)),
           Wrap(spacing: 5, children: [
             TextButton.icon(onPressed: busy || !dynamicLease ? null : () => _op(r, 'make-static', const {}, 'تم تثبيت عنوان IP.'), icon: const Icon(Icons.push_pin), label: const Text('تثبيت IP')),
-            TextButton.icon(onPressed: busy ? null : () => _rate(r), icon: const Icon(Icons.speed), label: const Text('السرعة')),
+            TextButton.icon(onPressed: busy || dynamicLease ? null : () => _rate(r), icon: const Icon(Icons.speed), label: Text(dynamicLease ? 'السرعة بعد تثبيت IP' : 'السرعة')),
             TextButton.icon(onPressed: busy ? null : () => _op(r, 'set', {'block-access': blocked ? 'no' : 'yes'}, blocked ? 'تم رفع الحظر.' : 'تم حظر الجهاز.'), icon: Icon(blocked ? Icons.lock_open : Icons.block, color: blocked ? _green : _red), label: Text(blocked ? 'رفع الحظر' : 'حظر')),
           ]),
           if (busy) const LinearProgressIndicator(),
@@ -192,19 +197,20 @@ class _BindingsState extends State<_Bindings> {
     mac.dispose(); ip.dispose(); server.dispose(); comment.dispose();
     if (values == null) return;
     try {
-      await widget.client.command('/ip/hotspot/ip-binding/add', args: values);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت إضافة IP Binding.')));
+      await widget.client.verifiedCommand('/ip/hotspot/ip-binding/add', args: values);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت إضافة IP Binding والتحقق منه.')));
       await _load();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendly(e)), backgroundColor: _red)); }
   }
 
   Future<void> _toggle(Map<String,String> row) async {
     final id = row['.id'] ?? '';
-    if (id.isEmpty || row['dynamic'] == 'true' || _busy.contains(id)) return;
+    if (id.isEmpty || _isRouterTrue(row['dynamic']) || _busy.contains(id)) return;
     setState(() => _busy.add(id));
     try {
-      final disabled = row['disabled'] == 'true';
-      await widget.client.command('/ip/hotspot/ip-binding/set', args: {'.id': id, 'disabled': disabled ? 'no' : 'yes'});
+      final disabled = _isRouterTrue(row['disabled']);
+      await widget.client.verifiedCommand('/ip/hotspot/ip-binding/set', args: {'.id': id, 'disabled': disabled ? 'no' : 'yes'});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث حالة القاعدة بعد التحقق.')));
       await _load();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendly(e)), backgroundColor: _red)); }
     finally { if (mounted) setState(() => _busy.remove(id)); }
@@ -212,13 +218,17 @@ class _BindingsState extends State<_Bindings> {
 
   Future<void> _delete(Map<String,String> row) async {
     final id = row['.id'] ?? '';
-    if (id.isEmpty || row['dynamic'] == 'true') return;
+    if (id.isEmpty || _isRouterTrue(row['dynamic'])) return;
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('حذف القاعدة؟'),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف'))],
     ));
     if (ok != true) return;
-    try { await widget.client.command('/ip/hotspot/ip-binding/remove', args: {'.id': id}); await _load(); }
+    try {
+      await widget.client.verifiedCommand('/ip/hotspot/ip-binding/remove', args: {'.id': id});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حذف القاعدة بعد التحقق.')));
+      await _load();
+    }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendly(e)), backgroundColor: _red)); }
   }
 
@@ -274,6 +284,9 @@ class _Retry extends StatelessWidget {
     TextButton.icon(onPressed: retry, icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة')),
   ])));
 }
+
+bool _isRouterTrue(String? value) =>
+    const <String>{'true', 'yes', '1'}.contains((value ?? '').trim().toLowerCase());
 
 String _friendly(Object error) {
   if (error is TimeoutException) return 'انتهت مهلة الاتصال بالراوتر.';
