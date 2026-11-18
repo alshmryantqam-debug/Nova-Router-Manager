@@ -44,7 +44,7 @@ const Color _rxColor = Color(0xFF43D9A3);
 const Color _txColor = Color(0xFF67B7FF);
 const Color _danger = Color(0xFFFF657A);
 
-enum _DashboardSection { home, networkMap, tools, monitoring, appSettings, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, appSettings, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers, rawQosWizard, telegramAlerts, hotspotTemplateInstaller }
+enum _DashboardSection { home, networkMap, tools, monitoring, appSettings, hotspot, pppoe, queues, firewall, neighbors, dhcpBinding, system, interfaces, liveTorch, apiTerminal, netwatch, hotspotSales, ipArpDns, natAddressLists, pccWizard, bandwidthTest, remoteAccess, cgnatBypass, externalSecurity, wirelessTowers, rawQosWizard, telegramAlerts, hotspotTemplateInstaller }
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
