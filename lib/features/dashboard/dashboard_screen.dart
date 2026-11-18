@@ -26,7 +26,6 @@ import '../network/netwatch_wan_screen.dart';
 import '../hotspot/hotspot_sales_report_screen.dart';
 import '../ip_management/ip_arp_dns_screen.dart';
 import '../diagnostics/bandwidth_test_screen.dart';
-import '../settings/app_settings_screen.dart';
 import '../settings/app_security_service.dart';
 import '../remote_access/wireguard_tunnel_screen.dart';
 import '../remote_access/cgnat_bypass_screen.dart';
@@ -253,7 +252,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _selectSection(_DashboardSection section) {
-    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+    Scaffold.maybeOf(context)?.closeDrawer();
     if (section != _section) setState(() => _section = section);
   }
 
@@ -523,7 +522,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             _ConnectionStatusPill(identity: data.identity, host: host, online: data.error == null),
             const SizedBox(height: 5),
-            _NovaCoreHero(identity: data.identity, boardName: data.boardName, version: data.version, host: host, degraded: data.error != null, uptime: resource['uptime'] ?? '—', cpuCount: resource['cpu-count'] ?? '—', architecture: resource['architecture-name'] ?? resource['architecture'] ?? '—'),
+            _NovaCoreHero(identity: data.identity, boardName: data.boardName, version: data.version, degraded: data.error != null),
             const SizedBox(height: 7),
             LayoutBuilder(builder: (context, constraints) => GridView.count(
               crossAxisCount: 4, crossAxisSpacing: 7, mainAxisSpacing: 7,
@@ -919,8 +918,8 @@ class RouterInterface {
 }
 
 class _ConnectionStatusPill extends StatelessWidget {
-  const _ConnectionStatusPill({required this.identity, required this.host, required this.online});
-  final String identity; final String host; final bool online;
+  const _ConnectionStatusPill({required this.host, required this.online});
+  final String host; final bool online;
   @override
   Widget build(BuildContext context) {
     final color = online ? const Color(0xFF39E6A5) : _danger;
@@ -1271,8 +1270,8 @@ class _HudTag extends StatelessWidget {
 }
 
 class _NovaCoreHero extends StatelessWidget {
-  const _NovaCoreHero({required this.identity, required this.boardName, required this.version, required this.host, required this.degraded, required this.uptime, required this.cpuCount, required this.architecture});
-  final String identity, boardName, version, host, uptime, cpuCount, architecture;
+  const _NovaCoreHero({required this.identity, required this.boardName, required this.version, required this.degraded});
+  final String identity, boardName, version;
   final bool degraded;
 
   @override
@@ -1458,6 +1457,8 @@ double? _number(String? source) {
 }
 
 double _toMbps(String? bitsPerSecond) => (_number(bitsPerSecond) ?? 0) / 1000000;
+
+String _formatMbps(double value) => value >= 100 ? value.toStringAsFixed(0) + ' Mbps' : value.toStringAsFixed(1) + ' Mbps';
 
 String? _firstNonEmpty(Iterable<String?> values) {
   for (final value in values) {
