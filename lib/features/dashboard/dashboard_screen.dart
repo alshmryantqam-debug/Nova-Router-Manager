@@ -258,7 +258,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _disconnect() async {
-    Navigator.of(context).pop();
+    Scaffold.maybeOf(context)?.closeDrawer();
     await ref.read(activeRouterClientProvider.notifier).disconnect();
   }
 
@@ -362,12 +362,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                                   : _section == _DashboardSection.hotspotTemplateInstaller
                                                                                                       ? const HotspotTemplateInstallerScreen()
                                                                                                       : const NetworkToolsScreen(),
-      bottomNavigationBar: Builder(builder: (navContext) => _buildNovaBottomBar(navContext)),
+      bottomNavigationBar: _buildNovaBottomBar()
       ),
     );
   }
 
-  Widget _buildNovaBottomBar(BuildContext navContext) => Container(
+  Widget _buildNovaBottomBar() => Container(
         decoration: BoxDecoration(
           color: const Color(0xFF070D19),
           border: Border(top: BorderSide(color: _accent.withOpacity(0.25))),
@@ -794,174 +794,7 @@ Widget _buildTools() => ListView(
     ],
   );
 
-Widget _buildNetworkTopology(DashboardSnapshot snapshot) {
-    final interfaces = _interfaces.take(6).toList(growable: false);
-    final running = _interfaces.where((item) => item.running).length;
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF0C1D35), Color(0xFF071222)]),
-        borderRadius: BorderRadius.circular(23),
-        border: Border.all(color: const Color(0xFF397DAD).withOpacity(0.38)),
-        boxShadow: [BoxShadow(color: _accent.withOpacity(0.07), blurRadius: 20)],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          const Icon(Icons.account_tree_rounded, color: _accent, size: 19),
-          const SizedBox(width: 8),
-          const Expanded(child: Text('خريطة اتصال الراوتر', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900))),
-          _HudTag(icon: Icons.hub_rounded, label: '${running}/${_interfaces.length} UP', color: running > 0 ? _rxColor : _danger),
-        ]),
-        const SizedBox(height: 14),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(17),
-              gradient: const LinearGradient(colors: [Color(0xFF123D64), Color(0xFF101B42)]),
-              border: Border.all(color: _accent.withOpacity(0.65)),
-              boxShadow: [BoxShadow(color: _accent.withOpacity(0.18), blurRadius: 18)],
-            ),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.router_rounded, color: _accent, size: 27),
-              const SizedBox(height: 4),
-              Text(snapshot.boardName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
-              Text('RouterOS ${snapshot.version}', textDirection: TextDirection.ltr, style: const TextStyle(color: Color(0xFF8BB8D8), fontSize: 9)),
-            ]),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Container(width: 1, height: 18, color: _accent.withOpacity(0.65)),
-        ),
-        if (_loadingInterfaces)
-          const LinearProgressIndicator(color: _accent, backgroundColor: Color(0xFF172A42))
-        else if (interfaces.isEmpty)
-          const Text('لا توجد واجهات متاحة من الراوتر حالياً', textAlign: TextAlign.center, style: TextStyle(color: _muted, fontSize: 10))
-        else
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 7,
-            runSpacing: 7,
-            children: interfaces.map((item) {
-              final color = item.running ? _rxColor : _muted;
-              return Container(
-                constraints: const BoxConstraints(minWidth: 92, maxWidth: 140),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF081426),
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: color.withOpacity(0.34)),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.lan_rounded, color: color, size: 15),
-                  const SizedBox(width: 6),
-                  Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                    Text(item.name, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
-                    Text(item.running ? 'متصل' : item.disabled ? 'معطّل' : 'غير متصل', style: TextStyle(color: color, fontSize: 9)),
-                  ])),
-                ]),
-              );
-            }).toList(growable: false),
-          ),
-        if (_interfaces.length > 6) ...[
-          const SizedBox(height: 7),
-          Text('و${_interfaces.length - 6} واجهات أخرى — افتح صفحة الواجهات للتفاصيل', textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 9)),
-        ],
-      ]),
-    );
-  }
-
-  Widget _buildTrafficPanel() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF10233C), Color(0xFF091426), Color(0xFF060D19)]),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _accent.withOpacity(0.22)),
-        boxShadow: [BoxShadow(color: _accent.withOpacity(0.07), blurRadius: 22, offset: const Offset(0, 8))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const Row(children: [
-          Icon(Icons.multiline_chart_rounded, color: _accent, size: 21),
-          SizedBox(width: 8),
-          Expanded(child: Text('مخطط حركة البيانات المباشر', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800))),
-          Icon(Icons.wifi_tethering_rounded, color: _rxColor, size: 17),
-        ]),
-        const SizedBox(height: 5),
-        const Text('سرعة السحب والرفع لحظيًا بوحدة Mbps', style: TextStyle(color: _muted, fontSize: 11)),
-        const SizedBox(height: 16),
-        if (_loadingInterfaces)
-          const LinearProgressIndicator(color: _accent, backgroundColor: Color(0xFF263042))
-        else if (_interfaceError != null && _interfaces.isEmpty)
-          _NoticeBanner(color: _danger, icon: Icons.error_outline_rounded, text: _interfaceError!)
-        else
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(color: const Color(0xFF0B1019), borderRadius: BorderRadius.circular(13), border: Border.all(color: Colors.white.withOpacity(0.07))),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _interfaces.any((item) => item.name == _selectedInterface) ? _selectedInterface : null,
-                isExpanded: true,
-                dropdownColor: const Color(0xFF171F2C),
-                icon: const Icon(Icons.expand_more_rounded, color: _accent),
-                hint: const Text('اختر كرت الشبكة أو بريدج المشتركين', style: TextStyle(color: _muted, fontSize: 12)),
-                items: _interfaces.map((item) {
-                  final status = item.running ? 'UP' : item.disabled ? 'DISABLED' : 'DOWN';
-                  return DropdownMenuItem<String>(
-                    value: item.name,
-                    child: Row(children: [
-                      Icon(Icons.lan_rounded, size: 16, color: item.running ? _rxColor : _muted),
-                      const SizedBox(width: 9),
-                      Expanded(child: Text(item.name, textDirection: TextDirection.ltr, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12))),
-                      Text(status, style: TextStyle(color: item.running ? _rxColor : _muted, fontSize: 9, fontWeight: FontWeight.w800)),
-                    ]),
-                  );
-                }).toList(growable: false),
-                onChanged: _selectInterface,
-              ),
-            ),
-          ),
-        if (_interfaceError != null && _interfaces.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(_interfaceError!, style: const TextStyle(color: _danger, fontSize: 10)),
-        ],
-        const SizedBox(height: 17),
-        Row(children: [
-          Expanded(child: _TrafficValue(label: 'RX · سحب', value: _hasTrafficSample ? _currentRxMbps.toStringAsFixed(2) + ' Mbps' : '—', color: _rxColor)),
-          const SizedBox(width: 10),
-          Expanded(child: _TrafficValue(label: 'TX · رفع', value: _hasTrafficSample ? _currentTxMbps.toStringAsFixed(2) + ' Mbps' : '—', color: _txColor)),
-        ]),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 210,
-          child: _rxSpots.isEmpty
-              ? Center(
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(_trafficError == null ? Icons.multiline_chart_rounded : Icons.sync_problem_rounded, size: 31, color: _muted),
-                    const SizedBox(height: 8),
-                    Text(_trafficError ?? (_selectedInterface == null ? 'حدد واجهة لبدء القياس' : 'في انتظار عينات الترافيك...'), textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 11)),
-                    if (_trafficError != null) ...[
-                      const SizedBox(height: 10),
-                      TextButton.icon(onPressed: _selectedInterface == null ? null : () => _subscribeTraffic(_selectedInterface!), icon: const Icon(Icons.refresh_rounded, size: 16), label: const Text('إعادة المحاولة')),
-                    ],
-                  ]),
-                )
-              : _buildLineChart(),
-        ),
-        const SizedBox(height: 8),
-        const Row(children: [
-          _LegendDot(color: _rxColor, label: 'RX'),
-          SizedBox(width: 18),
-          _LegendDot(color: _txColor, label: 'TX'),
-          Spacer(),
-          Text('آخر 60 عينة', style: TextStyle(color: _muted, fontSize: 10)),
-        ]),
-      ]),
-    );
-  }
-
-  Widget _buildLineChart() {
+Widget _buildLineChart() {
     final values = <double>[..._rxSpots.map((spot) => spot.y), ..._txSpots.map((spot) => spot.y)];
     final highest = values.fold<double>(0, (current, value) => math.max(current, value).toDouble());
     final maxY = math.max(5.0, (highest / 5).ceilToDouble() * 5).toDouble();
@@ -1438,227 +1271,192 @@ class _HudTag extends StatelessWidget {
 }
 
 class _NovaCoreHero extends StatelessWidget {
-  const _NovaCoreHero({
-    required this.identity,
-    required this.boardName,
-    required this.version,
-    required this.host,
-    required this.degraded,
-    required this.uptime,
-    required this.cpuCount,
-    required this.architecture,
-  });
-
-  final String identity;
-  final String boardName;
-  final String version;
-  final String host;
+  const _NovaCoreHero({required this.identity, required this.boardName, required this.version, required this.host, required this.degraded, required this.uptime, required this.cpuCount, required this.architecture});
+  final String identity, boardName, version, host, uptime, cpuCount, architecture;
   final bool degraded;
-  final String uptime;
-  final String cpuCount;
-  final String architecture;
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = degraded ? _danger : _rxColor;
-    return Container(
-      height: 252,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: const LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [Color(0xFF102B46), Color(0xFF091629), Color(0xFF060B15)],
-        ),
-        border: Border.all(color: _accent.withOpacity(0.42)),
-        boxShadow: [
-          BoxShadow(color: _accent.withOpacity(0.13), blurRadius: 28, spreadRadius: -7),
-          BoxShadow(color: const Color(0xFF8B5CFF).withOpacity(0.10), blurRadius: 26, offset: const Offset(-8, 12)),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(child: CustomPaint(painter: const _NovaCorePainter())),
-          Positioned(
-            top: 14,
-            left: 15,
-            child: _HudTag(
-              icon: degraded ? Icons.warning_amber_rounded : Icons.radar_rounded,
-              label: degraded ? 'TELEMETRY DEGRADED' : 'CORE ONLINE',
-              color: statusColor,
-            ),
-          ),
-          const Positioned(
-            top: 17,
-            right: 16,
-            child: Text('N O V A   /   C Y B E R - C O R E',
-              textDirection: TextDirection.ltr,
-              style: TextStyle(color: Color(0xFF78DFF5), fontSize: 7, fontWeight: FontWeight.w900)),
-          ),
-          Positioned(
-            top: 56,
-            left: 18,
-            right: 18,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  flex: 6,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('NETWORK COMMAND CENTER',
-                        textDirection: TextDirection.ltr,
-                        style: TextStyle(color: Color(0xFF70DFF5), fontSize: 8, letterSpacing: 1.2, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 8),
-                      Text(identity, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900,
-                          shadows: [Shadow(color: _accent, blurRadius: 14)])),
-                      const SizedBox(height: 5),
-                      Text(boardName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Color(0xFFB0C5DC), fontSize: 10, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 3),
-                      Text('RouterOS  $version', textDirection: TextDirection.ltr,
-                        style: const TextStyle(color: Color(0xFF819BB7), fontSize: 9)),
-                      if (host.isNotEmpty) ...[
-                        const SizedBox(height: 7),
-                        Row(children: [
-                          const Icon(Icons.lan_rounded, color: _accent, size: 11),
-                          const SizedBox(width: 5),
-                          Flexible(child: Text(host, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Color(0xFF91A7C2), fontSize: 9, fontWeight: FontWeight.w700))),
-                        ]),
-                      ],
-                    ],
-                  ),
-                ),
-                Expanded(flex: 5, child: SizedBox(height: 126, child: CustomPaint(painter: _RouterHologramPainter()))),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 13,
-            left: 14,
-            right: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-              decoration: BoxDecoration(
-                color: const Color(0xCC050D19),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Colors.white.withOpacity(0.09)),
-              ),
-              child: Row(children: [
-                _CoreFact(icon: Icons.timer_outlined, label: 'UPTIME', value: uptime),
-                _CoreFact(icon: Icons.memory_rounded, label: 'CPU CORES', value: cpuCount),
-                _CoreFact(icon: Icons.developer_board_rounded, label: 'ARCH', value: architecture),
-              ]),
-            ),
-          ),
-        ],
-      ),
+    final status = degraded ? _danger : _rxColor;
+    return SizedBox(
+      height: 188,
+      child: Stack(children: [
+        Positioned.fill(child: CustomPaint(painter: const _ReferenceRouterHeroPainter())),
+        Positioned(top: 4, right: 6, child: Text('NOVA  /  NETWORK CORE', textDirection: TextDirection.ltr, style: TextStyle(color: _accent.withOpacity(.7), fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 1.2))),
+        Positioned(left: 5, top: 6, child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 6, height: 6, decoration: BoxDecoration(color: status, shape: BoxShape.circle, boxShadow: [BoxShadow(color: status.withOpacity(.8), blurRadius: 7)])),
+          const SizedBox(width: 5),
+          Text(degraded ? 'TELEMETRY WARNING' : 'CORE ONLINE', textDirection: TextDirection.ltr, style: TextStyle(color: status, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: .6)),
+        ])),
+        Positioned(bottom: 4, left: 0, right: 0, child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(boardName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, shadows: [Shadow(color: _accent, blurRadius: 10)])),
+          const SizedBox(height: 2),
+          Text(identity + '  •  RouterOS ' + version, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF9DB8D8), fontSize: 8, fontWeight: FontWeight.w600)),
+        ])),
+      ]),
     );
   }
 }
 
-class _CoreFact extends StatelessWidget {
-  const _CoreFact({required this.icon, required this.label, required this.value});
-  final IconData icon;
-  final String label;
-  final String value;
+class _ReferenceRouterHeroPainter extends CustomPainter {
+  const _ReferenceRouterHeroPainter();
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Row(children: [
-      Icon(icon, color: _accent, size: 13),
-      const SizedBox(width: 5),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: _muted, fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 0.45)),
-        const SizedBox(height: 3),
-        Text(value, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
-      ])),
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 346, size.height / 182);
+    final glow = Paint()..shader = const RadialGradient(colors: [Color(0x6600E5FF), Color(0x226A00FF), Colors.transparent]).createShader(const Rect.fromLTWH(8, 24, 330, 150));
+    canvas.drawOval(const Rect.fromLTWH(8, 28, 330, 150), glow);
+    const dots = <Offset>[
+      Offset(55,40),Offset(62,42),Offset(70,38),Offset(78,45),Offset(85,50),
+      Offset(145,30),Offset(155,34),Offset(165,30),Offset(175,36),Offset(185,32),
+      Offset(235,36),Offset(245,40),Offset(255,35),Offset(265,42),Offset(275,48),Offset(285,44),
+      Offset(95,65),Offset(102,72),Offset(220,62),Offset(230,68),
+    ];
+    final dot = Paint()..color = const Color(0x7700D2FF);
+    for (final p in dots) { canvas.drawCircle(p, 1.5, dot); }
+    final ring = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.4..color = const Color(0x99B026FF);
+    canvas.drawOval(const Rect.fromLTWH(38, 122, 270, 48), ring);
+    ring.color = const Color(0xCC00E5FF); ring.strokeWidth = 2;
+    canvas.drawOval(const Rect.fromLTWH(61, 128, 224, 36), ring);
+    ring.color = const Color(0x997DF9FF); ring.strokeWidth = 1;
+    canvas.drawOval(const Rect.fromLTWH(87, 133, 172, 25), ring);
+    final antenna = Paint()..color = const Color(0xFF00E5FF)..strokeWidth = 2.2..strokeCap = StrokeCap.round;
+    const antennaData = <List<double>>[[110,34,110,91],[150,25,150,86],[194,27,194,87],[230,36,230,91]];
+    for (final a in antennaData) {
+      canvas.drawLine(Offset(a[0],a[1]),Offset(a[2],a[3]),antenna);
+      canvas.drawCircle(Offset(a[0],a[1]),3,Paint()..color=const Color(0xFFFFAB00));
+    }
+    final top = Path()..moveTo(84,96)..lineTo(142,74)..lineTo(256,84)..lineTo(212,112)..close();
+    final front = Path()..moveTo(84,96)..lineTo(212,112)..lineTo(212,138)..lineTo(84,122)..close();
+    final side = Path()..moveTo(212,112)..lineTo(256,84)..lineTo(256,108)..lineTo(212,138)..close();
+    final shellGlow = Paint()..color=const Color(0x9900DFFF)..style=PaintingStyle.stroke..strokeWidth=5..maskFilter=const MaskFilter.blur(BlurStyle.normal,8);
+    canvas.drawPath(top,shellGlow);canvas.drawPath(front,shellGlow);canvas.drawPath(side,shellGlow);
+    canvas.drawPath(top,Paint()..shader=const LinearGradient(colors:[Color(0xFF1B3568),Color(0xFF0A1736),Color(0xFF060D24)]).createShader(const Rect.fromLTWH(84,74,172,64)));
+    canvas.drawPath(front,Paint()..color=const Color(0xFF07112A));
+    canvas.drawPath(side,Paint()..color=const Color(0xFF0D1F49));
+    final edge=Paint()..color=const Color(0xFF00E5FF)..style=PaintingStyle.stroke..strokeWidth=1.7;
+    canvas.drawPath(top,edge);canvas.drawPath(front,edge);canvas.drawPath(side,edge);
+    final bezel=Path()..moveTo(92,103)..lineTo(204,117)..lineTo(204,132)..lineTo(92,118)..close();
+    canvas.drawPath(bezel,Paint()..color=const Color(0xFF040918));
+    canvas.drawPath(bezel,Paint()..color=const Color(0x8800E5FF)..style=PaintingStyle.stroke..strokeWidth=.8);
+    final label=TextPainter(text:const TextSpan(text:'MikroTik',style:TextStyle(color:Colors.white,fontSize:13,fontWeight:FontWeight.w800,letterSpacing:.4)),textDirection:TextDirection.ltr)..layout();
+    label.paint(canvas,const Offset(121,108));
+    for(var i=0;i<3;i++){canvas.drawCircle(Offset(184+i*7,123+i*.5),2.2,Paint()..color=i==1?const Color(0xFF00E676):const Color(0xFF00E5FF));}
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReferenceRouterHeroPainter oldDelegate) => false;
+}
+
+class _InternetGlobeNode extends StatelessWidget {
+  const _InternetGlobeNode();
+  @override
+  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 82, height: 82, decoration: BoxDecoration(shape: BoxShape.circle, gradient: const RadialGradient(colors: [Color(0xFF164E91), Color(0xFF071B3B), Color(0xFF040B1B)]), border: Border.all(color: const Color(0xFF00E5FF), width: 1.4), boxShadow: const [BoxShadow(color: Color(0x8800BFFF), blurRadius: 22), BoxShadow(color: Color(0x557B2CFF), blurRadius: 30)]), child: const Icon(Icons.public_rounded, color: Color(0xFF54E9FF), size: 49)),
+    const SizedBox(height: 4),
+    const Text('الإنترنت', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900, shadows: [Shadow(color: _accent, blurRadius: 9)])),
+  ]);
+}
+
+class _TopologyNode extends StatelessWidget {
+  const _TopologyNode({required this.icon, required this.title, required this.subtitle, required this.color, this.featured = false});
+  final IconData icon; final String title, subtitle; final Color color; final bool featured;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.symmetric(horizontal: 5, vertical: featured ? 12 : 9),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(begin: Alignment.topCenter,end: Alignment.bottomCenter,colors: [color.withOpacity(.19),const Color(0xFF071225)]),
+      borderRadius: BorderRadius.circular(featured ? 17 : 14),
+      border: Border.all(color: color.withOpacity(featured ? .8 : .42),width: featured ? 1.5 : 1),
+      boxShadow: [BoxShadow(color: color.withOpacity(.13),blurRadius: featured ? 18 : 10)],
+    ),
+    child: Column(mainAxisSize: MainAxisSize.min,children:[
+      Icon(icon,color:color,size:featured ? 31 : 27),
+      const SizedBox(height:5),
+      Text(title,textAlign:TextAlign.center,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:Colors.white,fontSize:featured ? 10 : 9,fontWeight:FontWeight.w900)),
+      const SizedBox(height:2),
+      Text(subtitle,textAlign:TextAlign.center,maxLines:1,overflow:TextOverflow.ellipsis,style:TextStyle(color:color,fontSize:8,fontWeight:FontWeight.w700)),
     ]),
   );
 }
 
-class _NovaCorePainter extends CustomPainter {
-  const _NovaCorePainter();
-
+class _ReferenceTopologyLinksPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final grid = Paint()..color = _accent.withOpacity(0.075)..strokeWidth = 0.6;
-    for (double x = 0; x < size.width; x += 22) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
+    final glow=Paint()..color=const Color(0x7700CFFF)..strokeWidth=4..maskFilter=const MaskFilter.blur(BlurStyle.normal,5);
+    final line=Paint()..color=const Color(0xCC00DFFF)..strokeWidth=1.3..style=PaintingStyle.stroke;
+    final center=size.width/2;
+    final paths=<Path>[
+      Path()..moveTo(center,0)..cubicTo(center*.8,22,size.width*.22,12,size.width*.155,62),
+      Path()..moveTo(center,0)..cubicTo(center*1.2,22,size.width*.78,12,size.width*.845,62),
+      Path()..moveTo(center,0)..lineTo(center,105),
+      Path()..moveTo(center,177)..cubicTo(center*.8,205,size.width*.22,205,size.width*.155,250),
+      Path()..moveTo(center,177)..lineTo(center,250),
+      Path()..moveTo(center,177)..cubicTo(center*1.2,205,size.width*.78,205,size.width*.845,250),
+    ];
+    for(final p in paths){canvas.drawPath(p,glow);canvas.drawPath(p,line);}
+    for(final p in [Offset(center,0),Offset(size.width*.155,62),Offset(size.width*.845,62),Offset(center,177),Offset(size.width*.155,250),Offset(center,250),Offset(size.width*.845,250)]){
+      canvas.drawCircle(p,3,Paint()..color=const Color(0xFF7DF9FF)..maskFilter=const MaskFilter.blur(BlurStyle.normal,4));
     }
-    for (double y = 0; y < size.height; y += 22) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
-    final center = Offset(size.width * 0.76, size.height * 0.53);
-    final ring = Paint()..style = PaintingStyle.stroke..strokeWidth = 1;
-    for (var i = 0; i < 4; i++) {
-      ring.color = _accent.withOpacity(0.12 - i * 0.018);
-      canvas.drawCircle(center, 53 + i * 18, ring);
-    }
-    final glow = Paint()
-      ..shader = RadialGradient(colors: [_accent.withOpacity(0.16), Colors.transparent])
-          .createShader(Rect.fromCircle(center: center, radius: 112));
-    canvas.drawCircle(center, 112, glow);
-    final sweep = Paint()
-      ..shader = SweepGradient(colors: [Colors.transparent, _accent.withOpacity(0.28), Colors.transparent])
-          .createShader(Rect.fromCircle(center: center, radius: 106));
-    canvas.drawArc(Rect.fromCircle(center: center, radius: 106), -1.1, 1.25, true, sweep);
   }
-
   @override
-  bool shouldRepaint(covariant _NovaCorePainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ReferenceTopologyLinksPainter oldDelegate)=>false;
 }
 
-class _RouterHologramPainter extends CustomPainter {
+class _MonitorTab extends StatelessWidget {
+  const _MonitorTab({required this.label,required this.selected,required this.onTap});
+  final String label;final bool selected;final VoidCallback onTap;
   @override
-  void paint(Canvas canvas, Size size) {
-    final glow = Paint()..color = _accent.withOpacity(0.16)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
-    final edge = Paint()..color = const Color(0xFF75EFFF)..style = PaintingStyle.stroke..strokeWidth = 1.25;
-    final top = Path()
-      ..moveTo(size.width * 0.12, size.height * 0.43)
-      ..lineTo(size.width * 0.50, size.height * 0.20)
-      ..lineTo(size.width * 0.91, size.height * 0.40)
-      ..lineTo(size.width * 0.52, size.height * 0.64)
-      ..close();
-    final front = Path()
-      ..moveTo(size.width * 0.12, size.height * 0.43)
-      ..lineTo(size.width * 0.52, size.height * 0.64)
-      ..lineTo(size.width * 0.52, size.height * 0.83)
-      ..lineTo(size.width * 0.12, size.height * 0.62)
-      ..close();
-    final side = Path()
-      ..moveTo(size.width * 0.52, size.height * 0.64)
-      ..lineTo(size.width * 0.91, size.height * 0.40)
-      ..lineTo(size.width * 0.91, size.height * 0.59)
-      ..lineTo(size.width * 0.52, size.height * 0.83)
-      ..close();
-    canvas.drawPath(top, glow);
-    canvas.drawPath(front, Paint()..shader = const LinearGradient(colors: [Color(0xFF1B668B), Color(0xFF09213B)]).createShader(Offset.zero & size));
-    canvas.drawPath(side, Paint()..shader = const LinearGradient(colors: [Color(0xFF123E69), Color(0xFF071629)]).createShader(Offset.zero & size));
-    canvas.drawPath(top, Paint()..shader = const LinearGradient(colors: [Color(0xFF2B91B7), Color(0xFF12365C)]).createShader(Offset.zero & size));
-    canvas.drawPath(top, edge);
-    canvas.drawPath(front, edge..color = _accent.withOpacity(0.75));
-    canvas.drawPath(side, edge..color = _accent.withOpacity(0.65));
-    final led = Paint()..color = const Color(0xFF72FFD0)..style = PaintingStyle.fill;
-    for (var i = 0; i < 5; i++) {
-      canvas.drawCircle(Offset(size.width * (0.23 + i * 0.055), size.height * (0.55 + i * 0.029)), 1.8, led);
-    }
-    final antenna = Paint()..color = const Color(0xFF75EFFF)..strokeWidth = 2..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(size.width * 0.31, size.height * 0.35), Offset(size.width * 0.25, size.height * 0.08), antenna);
-    canvas.drawLine(Offset(size.width * 0.75, size.height * 0.34), Offset(size.width * 0.82, size.height * 0.07), antenna);
-    final signal = Paint()..color = _accent.withOpacity(0.6)..style = PaintingStyle.stroke..strokeWidth = 1;
-    canvas.drawArc(Rect.fromCircle(center: Offset(size.width * 0.25, size.height * 0.08), radius: 9), -2.5, 1.8, false, signal);
-    canvas.drawArc(Rect.fromCircle(center: Offset(size.width * 0.82, size.height * 0.07), radius: 9), -2.5, 1.8, false, signal);
-  }
+  Widget build(BuildContext context)=>Expanded(child:GestureDetector(onTap:onTap,child:AnimatedContainer(duration:const Duration(milliseconds:180),padding:const EdgeInsets.symmetric(vertical:9),decoration:BoxDecoration(gradient:selected?const LinearGradient(colors:[Color(0xFF00C6FF),Color(0xFF0066FF)]):null,borderRadius:BorderRadius.circular(10),boxShadow:selected?[const BoxShadow(color:Color(0x7700A2FF),blurRadius:12)]:null),child:Text(label,textAlign:TextAlign.center,style:TextStyle(color:selected?Colors.white:const Color(0xFFB0C8E8),fontSize:11,fontWeight:selected?FontWeight.w900:FontWeight.w700)))));
+}
 
+class _NovaGauge extends StatelessWidget {
+  const _NovaGauge({required this.value,required this.label,required this.color,required this.suffix});
+  final double? value;final String label,suffix;final Color color;
   @override
-  bool shouldRepaint(covariant _RouterHologramPainter oldDelegate) => false;
+  Widget build(BuildContext context)=>SizedBox(height:92,child:Column(children:[
+    SizedBox(width:90,height:61,child:Stack(alignment:Alignment.center,children:[
+      Positioned.fill(child:CustomPaint(painter:_NovaGaugePainter(progress:value==null?null:(value!/100).clamp(0,1),color:color))),
+      Positioned(top:28,child:Text(value==null?'—':value!.toStringAsFixed(0)+suffix,style:const TextStyle(color:Colors.white,fontSize:13,fontWeight:FontWeight.w900))),
+    ])),
+    Text(label,style:TextStyle(color:color,fontSize:10,fontWeight:FontWeight.w900)),
+  ]));
+}
+
+class _NovaGaugePainter extends CustomPainter {
+  const _NovaGaugePainter({required this.progress,required this.color});
+  final double? progress;final Color color;
+  @override
+  void paint(Canvas canvas,Size size){
+    final rect=Rect.fromLTWH(8,5,size.width-16,(size.height*2)-10);
+    final bg=Paint()..color=Colors.white.withOpacity(.09)..style=PaintingStyle.stroke..strokeWidth=6..strokeCap=StrokeCap.round;
+    canvas.drawArc(rect,math.pi,math.pi,false,bg);
+    if(progress!=null){final p=Paint()..color=color..style=PaintingStyle.stroke..strokeWidth=6..strokeCap=StrokeCap.round..maskFilter=const MaskFilter.blur(BlurStyle.normal,2);canvas.drawArc(rect,math.pi,math.pi*progress!,false,p);}
+  }
+  @override
+  bool shouldRepaint(covariant _NovaGaugePainter old)=>old.progress!=progress||old.color!=color;
+}
+
+class _NovaBrandOrbitPainter extends CustomPainter {
+  const _NovaBrandOrbitPainter();
+  @override
+  void paint(Canvas canvas,Size size){
+    final center=Offset(size.width/2,size.height*.58);
+    for(var i=0;i<5;i++){final p=Paint()..color=(i.isEven?const Color(0x7700E5FF):const Color(0x667B2CFF)).withOpacity(.30-i*.035)..style=PaintingStyle.stroke..strokeWidth=1;canvas.drawOval(Rect.fromCenter(center:center,width:size.width*(.40+i*.16),height:18+i*8),p);}
+    final glow=Paint()..shader=RadialGradient(colors:[const Color(0x5500CFFF),Colors.transparent]).createShader(Rect.fromCircle(center:center,radius:size.width*.55));canvas.drawCircle(center,size.width*.55,glow);
+  }
+  @override
+  bool shouldRepaint(covariant _NovaBrandOrbitPainter old)=>false;
+}
+
+String _formatBytes(double value) {
+  if(value<=0)return '—';
+  if(value>=1073741824)return (value/1073741824).toStringAsFixed(1)+' GB';
+  if(value>=1048576)return (value/1048576).toStringAsFixed(1)+' MB';
+  if(value>=1024)return (value/1024).toStringAsFixed(0)+' KB';
+  return value.toStringAsFixed(0)+' B';
 }
 
 double? _number(String? source) {
