@@ -246,16 +246,36 @@ class RouterOsClient {
     return _sendRequest(path, args, timeout: timeout ?? requestTimeout);
   }
 
-  /// Starts a long-lived API request. Rows are delivered independently by .tag,
-  /// so multiple subscriptions and ordinary commands can share the same socket.
+  /// Starts a live RouterOS monitor. API mode uses a tagged stream; REST mode
+  /// polls the command with `once` because REST cannot keep monitor commands open.
   ///
   /// Example: monitorStream('/interface/monitor-traffic',
-  /// args: {'interface': 'ether1', 'once': 'false'}).
+  /// args: {'interface': 'ether1'}).
   Stream<Map<String, String>> monitorStream(
     String path, {
     Map<String, String> args = const <String, String>{},
+    Duration restPollInterval = const Duration(seconds: 1),
   }) {
     _ensureUsable();
+    if (useRestApi) {
+      if (restPollInterval <= Duration.zero) {
+        throw ArgumentError.value(
+          restPollInterval,
+          'restPollInterval',
+          'REST monitor polling interval must be positive',
+        );
+      }
+      return Stream<int>.periodic(restPollInterval, (tick) => tick)
+          .asyncExpand((_) async* {
+        final rows = await command(
+          path,
+          args: <String, String>{...args, 'once': ''},
+        );
+        if (rows.isNotEmpty) {
+          yield Map<String, String>.unmodifiable(rows.first);
+        }
+      });
+    }
     final tag = _newTag();
     final controller = StreamController<Map<String, String>>(
       onCancel: () => _cancelStream(tag),

@@ -69,4 +69,70 @@ void main() {
       await server.close(force: true);
     }
   });
+
+  test('REST monitorStream polls once and emits interface counters', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final monitorRequest = Completer<Map<String, String>>();
+
+    server.listen((request) async {
+      request.response.headers.contentType = ContentType.json;
+      if (request.uri.path == '/rest/system/identity') {
+        request.response.write('{"name":"nova-test"}');
+      } else if (request.uri.path == '/rest/interface/monitor-traffic' &&
+          request.method == 'POST') {
+        final body = await utf8.decoder.bind(request).join();
+        if (!monitorRequest.isCompleted) {
+          monitorRequest.complete(<String, String>{
+            'method': request.method,
+            'body': body,
+          });
+        }
+        request.response.write(jsonEncode(<Map<String, String>>[
+          <String, String>{
+            'name': 'ether1',
+            'rx-bits-per-second': '1250000',
+            'tx-bits-per-second': '640000',
+          },
+        ]));
+      } else {
+        request.response.statusCode = HttpStatus.notFound;
+        request.response.write('{}');
+      }
+      await request.response.close();
+    });
+
+    final client = RouterOsClient(
+      host: '127.0.0.1',
+      port: server.port,
+      username: 'nova-test',
+      password: 'test-password',
+      useRestApi: true,
+      autoReconnect: false,
+    );
+
+    try {
+      await client.connect();
+      final row = await client
+          .monitorStream(
+            '/interface/monitor-traffic',
+            args: const <String, String>{'interface': 'ether1'},
+            restPollInterval: const Duration(milliseconds: 10),
+          )
+          .first
+          .timeout(const Duration(seconds: 3));
+      final received = await monitorRequest.future.timeout(const Duration(seconds: 3));
+
+      expect(row['name'], 'ether1');
+      expect(row['rx-bits-per-second'], '1250000');
+      expect(row['tx-bits-per-second'], '640000');
+      expect(received['method'], 'POST');
+      expect(jsonDecode(received['body']!), <String, String>{
+        'interface': 'ether1',
+        'once': '',
+      });
+    } finally {
+      await client.close();
+      await server.close(force: true);
+    }
+  });
 }
