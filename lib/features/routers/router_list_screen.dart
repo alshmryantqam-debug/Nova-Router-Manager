@@ -11,10 +11,10 @@ import '../../core/providers/router_providers.dart';
 import '../../core/storage/router_storage_service.dart';
 import '../settings/app_settings_screen.dart';
 
-const Color _bg = Color(0xFF080B12);
-const Color _panel = Color(0xFF111722);
+const Color _bg = Color(0xFF030713);
+const Color _panel = Color(0xFF0A1426);
 const Color _muted = Color(0xFF8D9AB0);
-const Color _accent = Color(0xFF8B7CFF);
+const Color _accent = Color(0xFF18D9FF);
 const Color _green = Color(0xFF43D9A3);
 const Color _red = Color(0xFFFF657A);
 
@@ -208,14 +208,27 @@ class _RouterListScreenState extends ConsumerState<RouterListScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 20,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('الراوترات', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
-            SizedBox(height: 3),
-            Text('إدارة اتصالات MikroTik', style: TextStyle(fontSize: 11, color: _muted, fontWeight: FontWeight.w400)),
-          ],
-        ),
+        title: Row(children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: const LinearGradient(colors: [Color(0xFF12DFFF), Color(0xFF466BFF), Color(0xFF9B5CFF)]),
+              boxShadow: [BoxShadow(color: _accent.withOpacity(0.28), blurRadius: 16)],
+            ),
+            child: const Icon(Icons.hub_rounded, color: Color(0xFF03101C), size: 24),
+          ),
+          const SizedBox(width: 11),
+          const Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('NOVA  /  ROUTER MANAGER', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 0.3)),
+              SizedBox(height: 3),
+              Text('مركز إدارة اتصالات MikroTik', style: TextStyle(fontSize: 10, color: _muted, fontWeight: FontWeight.w500)),
+            ],
+          )),
+        ]),
         actions: [
           IconButton(
             tooltip: 'إعدادات التطبيق والأمان',
@@ -315,9 +328,10 @@ class _SummaryPanel extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Color(0xFF252344), Color(0xFF131A27), Color(0xFF111722)],
+          colors: [Color(0xFF12385B), Color(0xFF0B1B32), Color(0xFF07101F)],
         ),
-        border: Border.all(color: _accent.withOpacity(0.22)),
+        border: Border.all(color: _accent.withOpacity(0.34)),
+        boxShadow: [BoxShadow(color: _accent.withOpacity(0.09), blurRadius: 24, offset: const Offset(0, 9))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
