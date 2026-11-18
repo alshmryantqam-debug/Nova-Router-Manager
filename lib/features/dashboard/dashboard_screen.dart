@@ -362,7 +362,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                                                                   : _section == _DashboardSection.hotspotTemplateInstaller
                                                                                                       ? const HotspotTemplateInstallerScreen()
                                                                                                       : const NetworkToolsScreen(),
-      bottomNavigationBar: _buildNovaBottomBar()
+      bottomNavigationBar: _buildNovaBottomBar(),
       ),
     );
   }
@@ -741,7 +741,7 @@ Widget _buildTools() => ListView(
             _NovaMetricTile(title: 'الحرارة', value: _formatSensor(temp, '°C'), icon: Icons.thermostat_rounded, color: const Color(0xFFFF627D)),
           ]),
           const SizedBox(height: 12),
-          _NetworkMapAction(icon: Icons.memory_rounded, title: 'الذاكرة الحرة', subtitle: _formatBytes(free) + ' / ' + _formatBytes(total), onTap: () => setState(() => _monitorTab = 1)),
+          _NetworkMapAction(icon: Icons.memory_rounded, title: 'الذاكرة الحرة', subtitle: (resource['free-memory'] ?? '—') + ' / ' + (resource['total-memory'] ?? '—'), onTap: () => setState(() => _monitorTab = 1)),
         ] else ...[
           Row(children: [
             Expanded(child: _NovaMetricTile(title: 'واجهات فعّالة', value: interfacesUp.toString(), icon: Icons.lan_rounded, color: _rxColor)),
@@ -1449,14 +1449,6 @@ class _NovaBrandOrbitPainter extends CustomPainter {
   }
   @override
   bool shouldRepaint(covariant _NovaBrandOrbitPainter old)=>false;
-}
-
-String _formatBytes(double value) {
-  if(value<=0)return '—';
-  if(value>=1073741824)return (value/1073741824).toStringAsFixed(1)+' GB';
-  if(value>=1048576)return (value/1048576).toStringAsFixed(1)+' MB';
-  if(value>=1024)return (value/1024).toStringAsFixed(0)+' KB';
-  return value.toStringAsFixed(0)+' B';
 }
 
 double? _number(String? source) {
