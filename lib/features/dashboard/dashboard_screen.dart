@@ -488,7 +488,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case _DashboardSection.natAddressLists: return 'قواعد NAT وقوائم العناوين';
       case _DashboardSection.pccWizard: return 'معالج توزيع الأحمال PCC';
       case _DashboardSection.bandwidthTest: return 'اختبار سرعة الاتصال';
-      case _DashboardSection.appSettings: return 'إعدادات التطبيق والأمان';
       case _DashboardSection.remoteAccess: return 'الوصول الخارجي والأنفاق';
       case _DashboardSection.cgnatBypass: return 'تجاوز CGNAT عبر ZeroTier وVPN';
       case _DashboardSection.externalSecurity: return 'الأمان الخارجي وتحويل المنافذ';
@@ -517,11 +516,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final visibleInterfaces = _interfaces.take(3).toList(growable: false);
         return RefreshIndicator(
         color: _accent, backgroundColor: _panel,
-        onRefresh: () async { if (_client != null) await _loadInterfaces(_client!); },
+        onRefresh: () async { if (_client != null) await _loadInterfaces(_client); },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(13, 2, 13, 18),
           children: [
-            _ConnectionStatusPill(identity: data.identity, host: host, online: data.error == null),
+            _ConnectionStatusPill(host: ref.read(activeRouterDetailsProvider)?.host ?? '', online: data.error == null),
             const SizedBox(height: 5),
             _NovaCoreHero(identity: data.identity, boardName: data.boardName, version: data.version, degraded: data.error != null),
             const SizedBox(height: 7),
@@ -620,7 +619,10 @@ Widget _buildNetworkMap() => StreamBuilder<DashboardSnapshot>(
       final active = _interfaces.where((item) => item.running).length;
       final wan = _interfaces.where((item) => RegExp(r'wan|starlink|ether[123]|sfp').hasMatch(item.name.toLowerCase())).take(2).toList();
       return ListView(padding: const EdgeInsets.fromLTRB(13, 8, 13, 20), children: [
-        const Text('خريطة الشبكة', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)),
+        Row(children: [
+          const Expanded(child: Text('خريطة الشبكة', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900))),
+          _HudTag(icon: Icons.lan_rounded, label: active.toString() + '/' + _interfaces.length.toString() + ' UP', color: active > 0 ? _rxColor : _danger),
+        ]),
         const SizedBox(height: 3),
         const Text('تصوّر الاتصال من الإنترنت إلى الراوتر ثم الشبكة الداخلية', style: TextStyle(color: _muted, fontSize: 10)),
         const SizedBox(height: 9),
@@ -1156,28 +1158,6 @@ class _SectionHeading extends StatelessWidget {
         const SizedBox(height: 4),
         Text(subtitle, style: const TextStyle(color: _muted, fontSize: 10)),
       ]);
-}
-
-class _TrafficValue extends StatelessWidget {
-  const _TrafficValue({required this.label, required this.value, required this.color});
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-        decoration: BoxDecoration(color: const Color(0xFF0B1019), borderRadius: BorderRadius.circular(13)),
-        child: Row(children: [
-          Container(width: 3, height: 27, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
-          const SizedBox(width: 9),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: const TextStyle(color: _muted, fontSize: 10)),
-            const SizedBox(height: 3),
-            Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w900)),
-          ])),
-        ]),
-      );
 }
 
 class _LegendDot extends StatelessWidget {
