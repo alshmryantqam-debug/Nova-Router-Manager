@@ -591,7 +591,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Flexible(child: Text(tx == null ? '— Mbps' : _formatMbps(tx), maxLines: 1, style: const TextStyle(color: Color(0xFF18FFFF), fontSize: 17, fontWeight: FontWeight.w900), textDirection: TextDirection.ltr)),
           ])),
         ]),
-        SizedBox(height: 55, child: _rxSpots.length < 2 ? const Center(child: Text('في انتظار بيانات حركة الشبكة...', style: TextStyle(color: _muted, fontSize: 9))) : _buildCompactTrafficChart()),
+        SizedBox(height: 55, child: _rxSpots.length < 2 ? Center(child: Text(_trafficError ?? 'في انتظار بيانات حركة الشبكة...', textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 9))) : _buildCompactTrafficChart()),
       ]),
     );
   }
