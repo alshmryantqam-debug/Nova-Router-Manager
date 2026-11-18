@@ -284,9 +284,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 12,
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_sectionTitle(_section), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          Text(activeRouter == null ? 'جلسة RouterOS' : activeRouter.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _muted, fontSize: 10)),
+        title: Row(children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(13),
+              gradient: const LinearGradient(colors: [Color(0xFF12DFFF), Color(0xFF466BFF), Color(0xFF9B5CFF)]),
+              boxShadow: [BoxShadow(color: _accent.withOpacity(0.28), blurRadius: 15)],
+            ),
+            child: const Icon(Icons.hub_rounded, color: Color(0xFF03101C), size: 22),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_section == _DashboardSection.home ? 'NOVA  /  COMMAND' : _sectionTitle(_section),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 0.35)),
+            Text(activeRouter == null ? 'جلسة RouterOS' : activeRouter.name,
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: _muted, fontSize: 10)),
+          ])),
         ]),
         actions: [
           IconButton(
@@ -523,7 +540,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   cpuCount: resource['cpu-count'] ?? '—',
                   architecture: resource['architecture-name'] ?? resource['architecture'] ?? '—',
                 ),
-                const SizedBox(height: 11),
+                const SizedBox(height: 12),
+                _buildNetworkTopology(data),
+                const SizedBox(height: 12),
                 LayoutBuilder(builder: (context, constraints) {
                   final compact = constraints.maxWidth < 390;
                   return GridView.count(
@@ -578,21 +597,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const _SectionHeading(title: 'الوصول السريع', subtitle: 'أدوات الإدارة الأكثر استخداماً'),
                 const SizedBox(height: 9),
                 GridView.count(
-                  crossAxisCount: 4,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 0.91,
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 9,
+                  mainAxisSpacing: 9,
+                  childAspectRatio: 1.08,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     _NovaQuickAction(icon: Icons.flash_on_rounded, title: 'Torch', color: const Color(0xFF36F2D0), onTap: () => _selectSection(_DashboardSection.liveTorch)),
-                    _NovaQuickAction(icon: Icons.speed_rounded, title: 'Ping', color: _accent, onTap: () => _selectSection(_DashboardSection.bandwidthTest)),
-                    _NovaQuickAction(icon: Icons.hub_rounded, title: 'الشبكة', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.neighbors)),
+                    _NovaQuickAction(icon: Icons.route_rounded, title: 'Ping / Speed', color: _accent, onTap: () => _selectSection(_DashboardSection.bandwidthTest)),
+                    _NovaQuickAction(icon: Icons.hub_rounded, title: 'الجيران', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.neighbors)),
                     _NovaQuickAction(icon: Icons.security_rounded, title: 'Firewall', color: const Color(0xFF4DABFF), onTap: () => _selectSection(_DashboardSection.firewall)),
                     _NovaQuickAction(icon: Icons.wifi_tethering_rounded, title: 'Hotspot', color: const Color(0xFF37E5C0), onTap: () => _selectSection(_DashboardSection.hotspot)),
                     _NovaQuickAction(icon: Icons.people_alt_rounded, title: 'PPPoE', color: const Color(0xFF5AC8FF), onTap: () => _selectSection(_DashboardSection.pppoe)),
                     _NovaQuickAction(icon: Icons.dns_rounded, title: 'IP / DNS', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.ipArpDns)),
                     _NovaQuickAction(icon: Icons.queue_rounded, title: 'Queues', color: const Color(0xFFFFB45E), onTap: () => _selectSection(_DashboardSection.queues)),
+                    _NovaQuickAction(icon: Icons.devices_rounded, title: 'DHCP', color: const Color(0xFF55B8FF), onTap: () => _selectSection(_DashboardSection.dhcpBinding)),
+                    _NovaQuickAction(icon: Icons.lan_rounded, title: 'Interfaces', color: const Color(0xFF42E6C0), onTap: () => _selectSection(_DashboardSection.interfaces)),
+                    _NovaQuickAction(icon: Icons.monitor_heart_rounded, title: 'WAN Watch', color: const Color(0xFFFF8EAC), onTap: () => _selectSection(_DashboardSection.netwatch)),
+                    _NovaQuickAction(icon: Icons.settings_suggest_rounded, title: 'System', color: const Color(0xFFFFC46B), onTap: () => _selectSection(_DashboardSection.system)),
                   ],
                 ),
               ],
@@ -602,10 +625,93 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
 
 
+  Widget _buildNetworkTopology(DashboardSnapshot snapshot) {
+    final interfaces = _interfaces.take(6).toList(growable: false);
+    final running = _interfaces.where((item) => item.running).length;
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF0C1D35), Color(0xFF071222)]),
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(color: const Color(0xFF397DAD).withOpacity(0.38)),
+        boxShadow: [BoxShadow(color: _accent.withOpacity(0.07), blurRadius: 20)],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Icon(Icons.account_tree_rounded, color: _accent, size: 19),
+          const SizedBox(width: 8),
+          const Expanded(child: Text('خريطة اتصال الراوتر', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900))),
+          _HudTag(icon: Icons.hub_rounded, label: '${running}/${_interfaces.length} UP', color: running > 0 ? _rxColor : _danger),
+        ]),
+        const SizedBox(height: 14),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(17),
+              gradient: const LinearGradient(colors: [Color(0xFF123D64), Color(0xFF101B42)]),
+              border: Border.all(color: _accent.withOpacity(0.65)),
+              boxShadow: [BoxShadow(color: _accent.withOpacity(0.18), blurRadius: 18)],
+            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.router_rounded, color: _accent, size: 27),
+              const SizedBox(height: 4),
+              Text(snapshot.boardName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+              Text('RouterOS ${snapshot.version}', textDirection: TextDirection.ltr, style: const TextStyle(color: Color(0xFF8BB8D8), fontSize: 9)),
+            ]),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 26),
+          child: Container(width: 1, height: 18, color: _accent.withOpacity(0.65)),
+        ),
+        if (_loadingInterfaces)
+          const LinearProgressIndicator(color: _accent, backgroundColor: Color(0xFF172A42))
+        else if (interfaces.isEmpty)
+          const Text('لا توجد واجهات متاحة من الراوتر حالياً', textAlign: TextAlign.center, style: TextStyle(color: _muted, fontSize: 10))
+        else
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 7,
+            runSpacing: 7,
+            children: interfaces.map((item) {
+              final color = item.running ? _rxColor : _muted;
+              return Container(
+                constraints: const BoxConstraints(minWidth: 92, maxWidth: 140),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF081426),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: color.withOpacity(0.34)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.lan_rounded, color: color, size: 15),
+                  const SizedBox(width: 6),
+                  Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                    Text(item.name, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                    Text(item.running ? 'متصل' : item.disabled ? 'معطّل' : 'غير متصل', style: TextStyle(color: color, fontSize: 9)),
+                  ])),
+                ]),
+              );
+            }).toList(growable: false),
+          ),
+        if (_interfaces.length > 6) ...[
+          const SizedBox(height: 7),
+          Text('و${_interfaces.length - 6} واجهات أخرى — افتح صفحة الواجهات للتفاصيل', textAlign: TextAlign.center, style: const TextStyle(color: _muted, fontSize: 9)),
+        ],
+      ]),
+    );
+  }
+
   Widget _buildTrafficPanel() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(22), border: Border.all(color: Colors.white.withOpacity(0.065))),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [Color(0xFF10233C), Color(0xFF091426), Color(0xFF060D19)]),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _accent.withOpacity(0.22)),
+        boxShadow: [BoxShadow(color: _accent.withOpacity(0.07), blurRadius: 22, offset: const Offset(0, 8))],
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const Row(children: [
           Icon(Icons.multiline_chart_rounded, color: _accent, size: 21),
@@ -748,7 +854,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             barWidth: 2.3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: _rxColor.withOpacity(0.09)),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [_rxColor.withOpacity(0.28), _rxColor.withOpacity(0.015)]),
+            ),
           ),
           LineChartBarData(
             spots: _txSpots,
@@ -758,7 +867,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             barWidth: 2.3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: _txColor.withOpacity(0.07)),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [_txColor.withOpacity(0.20), _txColor.withOpacity(0.01)]),
+            ),
           ),
         ],
       ),
