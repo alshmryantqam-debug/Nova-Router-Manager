@@ -378,7 +378,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _NovaNavItem(icon: Icons.home_rounded, label: 'الرئيسية', selected: _section == _DashboardSection.home, onTap: () => _selectSection(_DashboardSection.home)),
             _NovaNavItem(icon: Icons.people_alt_rounded, label: 'المشتركين', selected: _section == _DashboardSection.hotspot || _section == _DashboardSection.pppoe || _section == _DashboardSection.hotspotSales, onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const UnifiedActiveUsersScreen()))),
             _NovaNavItem(icon: Icons.hub_rounded, label: 'الشبكة', selected: _section == _DashboardSection.networkMap || _section == _DashboardSection.neighbors || _section == _DashboardSection.interfaces || _section == _DashboardSection.netwatch || _section == _DashboardSection.wirelessTowers || _section == _DashboardSection.liveTorch, onTap: () => _selectSection(_DashboardSection.networkMap)),
-            _NovaNavItem(icon: Icons.grid_view_rounded, label: 'المزيد', selected: !const {_DashboardSection.home, _DashboardSection.hotspot, _DashboardSection.pppoe, _DashboardSection.hotspotSales, _DashboardSection.neighbors, _DashboardSection.interfaces, _DashboardSection.netwatch, _DashboardSection.wirelessTowers, _DashboardSection.liveTorch}.contains(_section), onTap: () => Scaffold.of(navContext).openDrawer()),
+            _NovaNavItem(icon: Icons.grid_view_rounded, label: 'المزيد', selected: !const {_DashboardSection.home, _DashboardSection.networkMap, _DashboardSection.hotspot, _DashboardSection.pppoe, _DashboardSection.hotspotSales, _DashboardSection.neighbors, _DashboardSection.interfaces, _DashboardSection.netwatch, _DashboardSection.wirelessTowers, _DashboardSection.liveTorch}.contains(_section), onTap: () => Scaffold.of(navContext).openDrawer()),
           ]),
         ),
       );
@@ -526,6 +526,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(13, 4, 13, 20),
               children: [
+                _ConnectionStatusPill(identity: data.identity, host: ref.read(activeRouterDetailsProvider)?.host ?? '', online: data.error == null),
+                const SizedBox(height: 10),
                 _NovaCoreHero(
                   identity: data.identity,
                   boardName: data.boardName,
@@ -536,8 +538,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   cpuCount: resource['cpu-count'] ?? '—',
                   architecture: resource['architecture-name'] ?? resource['architecture'] ?? '—',
                 ),
-                const SizedBox(height: 10),
-                _ConnectionStatusPill(identity: data.identity, host: ref.read(activeRouterDetailsProvider)?.host ?? '', online: data.error == null),
                 const SizedBox(height: 12),
                 LayoutBuilder(builder: (context, constraints) {
                   return GridView.count(crossAxisCount: 4, crossAxisSpacing: 7, mainAxisSpacing: 7, childAspectRatio: constraints.maxWidth < 360 ? 0.66 : 0.76,
