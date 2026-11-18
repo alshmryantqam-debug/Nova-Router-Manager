@@ -15,16 +15,22 @@ void main() {
 class NovaRouterManagerApp extends StatelessWidget {
   const NovaRouterManagerApp({super.key});
 
-  static const Color _background = Color(0xFF070D15);
-  static const Color _surface = Color(0xFF101B27);
-  static const Color _accent = Color(0xFF35D7F2);
+  static const Color _background = Color(0xFF030713);
+  static const Color _surface = Color(0xFF0A1426);
+  static const Color _accent = Color(0xFF18D9FF);
+  static const Color _violet = Color(0xFF8B5CFF);
 
   @override
   Widget build(BuildContext context) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: _accent,
-      brightness: Brightness.dark,
+    const scheme = ColorScheme.dark(
+      primary: _accent,
+      secondary: _violet,
+      tertiary: Color(0xFF37E5B4),
       surface: _surface,
+      error: Color(0xFFFF5577),
+      onPrimary: Color(0xFF00121A),
+      onSecondary: Colors.white,
+      onSurface: Color(0xFFEAF4FF),
     );
 
     final theme = ThemeData(
@@ -33,13 +39,22 @@ class NovaRouterManagerApp extends StatelessWidget {
       colorScheme: scheme,
       scaffoldBackgroundColor: _background,
       canvasColor: _surface,
-      dividerColor: const Color(0xFF233747),
+      dividerColor: const Color(0xFF1A3150),
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: const <String>['Noto Sans Arabic', 'Noto Naskh Arabic', 'sans-serif'],
+      textTheme: ThemeData.dark().textTheme.apply(
+        bodyColor: const Color(0xFFEAF4FF),
+        displayColor: Colors.white,
+        fontFamily: 'sans-serif',
+        fontFamilyFallback: const <String>['Noto Sans Arabic', 'Noto Naskh Arabic', 'sans-serif'],
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: _background,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 0.2),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -71,7 +86,23 @@ class NovaRouterManagerApp extends StatelessWidget {
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: _accent,
-        linearTrackColor: Color(0xFF233747),
+        linearTrackColor: Color(0xFF1A3150),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF0A1426),
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFF1B3B5C))),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF050B18),
+        indicatorColor: _accent.withValues(alpha: 0.16),
+        elevation: 0,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+          color: states.contains(WidgetState.selected) ? _accent : const Color(0xFF91A5C0),
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        )),
       ),
     );
 
