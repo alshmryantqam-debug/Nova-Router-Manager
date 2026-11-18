@@ -56,6 +56,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late final RouterOsClient? _client;
   late final Stream<DashboardSnapshot> _snapshotStream;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   _DashboardSection _section = _DashboardSection.home;
   List<RouterInterface> _interfaces = <RouterInterface>[];
   String? _selectedInterface;
@@ -252,7 +253,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _selectSection(_DashboardSection section) {
-    Scaffold.maybeOf(context)?.closeDrawer();
+    _scaffoldKey.currentState?.closeDrawer();
     if (section != _section) setState(() => _section = section);
   }
 
@@ -277,6 +278,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         }
       },
       child: Scaffold(
+      key: _scaffoldKey,
       backgroundColor: _bg,
       drawer: _buildDrawer(activeRouter),
       appBar: AppBar(
@@ -513,8 +515,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final temperature = _firstNonEmpty([health['cpu-temperature'], health['temperature'], health['board-temperature1'], health['board-temperature'], resource['cpu-temperature'], resource['temperature']]);
       final voltage = _firstNonEmpty([health['voltage'], resource['voltage']]);
       final visibleInterfaces = _interfaces.take(3).toList(growable: false);
-      final host = ref.read(activeRouterDetailsProvider)?.host ?? '';
-      return RefreshIndicator(
+        return RefreshIndicator(
         color: _accent, backgroundColor: _panel,
         onRefresh: () async { if (_client != null) await _loadInterfaces(_client!); },
         child: ListView(
@@ -597,11 +598,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildCompactTrafficChart() {
-    final maxY = <double>[..._rxSpots.map((e) => e.y), ..._txSpots.map((e) => e.y)].fold<double>(5, (a, b) => math.max(a, b)).clamp(5, double.infinity).toDouble();
+    final maxY = <double>[..._rxSpots.map((e) => e.y), ..._txSpots.map((e) => e.y)].fold<double>(5, (a, b) => math.max(a, b).toDouble()).clamp(5, double.infinity).toDouble();
     final lastX = _rxSpots.last.x;
     final minX = math.max(0, lastX - 24).toDouble();
     return LineChart(LineChartData(
-      minX: minX, maxX: math.max(minX + 1, lastX), minY: 0, maxY: maxY * 1.12,
+      minX: minX, maxX: math.max(minX + 1, lastX).toDouble(), minY: 0, maxY: maxY * 1.12,
       gridData: const FlGridData(show: false), titlesData: const FlTitlesData(show: false),
       borderData: FlBorderData(show: false), lineTouchData: const LineTouchData(enabled: false),
       lineBarsData: [
@@ -668,18 +669,18 @@ Widget _buildTools() => ListView(
       const _SectionHeading(title: 'أدوات الشبكة المتقدمة', subtitle: 'كل أداة تفتح وظيفتها الفعلية'),
       const SizedBox(height: 14),
       GridView.count(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.94, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), children: [
-        _NovaQuickAction(icon: Icons.flash_on_rounded, title: 'Torch', color: const Color(0xFF36F2D0), onTap: () => _selectSection(_DashboardSection.liveTorch)),
-        _NovaQuickAction(icon: Icons.route_rounded, title: 'Ping / Speed', color: _accent, onTap: () => _selectSection(_DashboardSection.bandwidthTest)),
-        _NovaQuickAction(icon: Icons.hub_rounded, title: 'الجيران', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.neighbors)),
-        _NovaQuickAction(icon: Icons.security_rounded, title: 'Firewall', color: const Color(0xFF4DABFF), onTap: () => _selectSection(_DashboardSection.firewall)),
-        _NovaQuickAction(icon: Icons.wifi_tethering_rounded, title: 'Hotspot', color: const Color(0xFF37E5C0), onTap: () => _selectSection(_DashboardSection.hotspot)),
-        _NovaQuickAction(icon: Icons.people_alt_rounded, title: 'PPPoE', color: const Color(0xFF5AC8FF), onTap: () => _selectSection(_DashboardSection.pppoe)),
-        _NovaQuickAction(icon: Icons.dns_rounded, title: 'IP / DNS', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.ipArpDns)),
-        _NovaQuickAction(icon: Icons.queue_rounded, title: 'Queues', color: const Color(0xFFFFB45E), onTap: () => _selectSection(_DashboardSection.queues)),
-        _NovaQuickAction(icon: Icons.devices_rounded, title: 'DHCP', color: const Color(0xFF55B8FF), onTap: () => _selectSection(_DashboardSection.dhcpBinding)),
-        _NovaQuickAction(icon: Icons.lan_rounded, title: 'Interfaces', color: const Color(0xFF42E6C0), onTap: () => _selectSection(_DashboardSection.interfaces)),
-        _NovaQuickAction(icon: Icons.monitor_heart_rounded, title: 'WAN Watch', color: const Color(0xFFFF8EAC), onTap: () => _selectSection(_DashboardSection.netwatch)),
-        _NovaQuickAction(icon: Icons.settings_suggest_rounded, title: 'System', color: const Color(0xFFFFC46B), onTap: () => _selectSection(_DashboardSection.system)),
+        _NovaQuickAction(icon: Icons.flash_on_rounded, title: 'Torch', subtitle: 'مراقبة مباشرة', color: const Color(0xFF36F2D0), onTap: () => _selectSection(_DashboardSection.liveTorch)),
+        _NovaQuickAction(icon: Icons.route_rounded, title: 'Ping / Speed', subtitle: 'اختبار الاتصال', color: _accent, onTap: () => _selectSection(_DashboardSection.bandwidthTest)),
+        _NovaQuickAction(icon: Icons.hub_rounded, title: 'الجيران', subtitle: 'تتبع الأجهزة', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.neighbors)),
+        _NovaQuickAction(icon: Icons.security_rounded, title: 'Firewall', subtitle: 'الجدار الناري', color: const Color(0xFF4DABFF), onTap: () => _selectSection(_DashboardSection.firewall)),
+        _NovaQuickAction(icon: Icons.wifi_tethering_rounded, title: 'Hotspot', subtitle: 'إدارة الهوتسبوت', color: const Color(0xFF37E5C0), onTap: () => _selectSection(_DashboardSection.hotspot)),
+        _NovaQuickAction(icon: Icons.people_alt_rounded, title: 'PPPoE', subtitle: 'إدارة المشتركين', color: const Color(0xFF5AC8FF), onTap: () => _selectSection(_DashboardSection.pppoe)),
+        _NovaQuickAction(icon: Icons.dns_rounded, title: 'IP / DNS', subtitle: 'إدارة العناوين', color: const Color(0xFFB77AFF), onTap: () => _selectSection(_DashboardSection.ipArpDns)),
+        _NovaQuickAction(icon: Icons.queue_rounded, title: 'Queues', subtitle: 'إدارة الطوابير', color: const Color(0xFFFFB45E), onTap: () => _selectSection(_DashboardSection.queues)),
+        _NovaQuickAction(icon: Icons.devices_rounded, title: 'DHCP', subtitle: 'خدمات DHCP', color: const Color(0xFF55B8FF), onTap: () => _selectSection(_DashboardSection.dhcpBinding)),
+        _NovaQuickAction(icon: Icons.lan_rounded, title: 'Interfaces', subtitle: 'المنافذ والربط', color: const Color(0xFF42E6C0), onTap: () => _selectSection(_DashboardSection.interfaces)),
+        _NovaQuickAction(icon: Icons.monitor_heart_rounded, title: 'WAN Watch', subtitle: 'مراقبة WAN', color: const Color(0xFFFF8EAC), onTap: () => _selectSection(_DashboardSection.netwatch)),
+        _NovaQuickAction(icon: Icons.settings_suggest_rounded, title: 'System', subtitle: 'النظام والصيانة', color: const Color(0xFFFFC46B), onTap: () => _selectSection(_DashboardSection.system)),
       ]),
       const SizedBox(height: 16),
       _NetworkMapAction(icon: Icons.settings_rounded, title: 'إعدادات النظام والتطبيق', subtitle: 'الاتصال والأمان والنسخ الاحتياطي', onTap: () => _selectSection(_DashboardSection.appSettings)),
@@ -1050,9 +1051,10 @@ class _NovaInterfaceTile extends StatelessWidget {
 }
 
 class _NovaQuickAction extends StatelessWidget {
-  const _NovaQuickAction({required this.icon, required this.title, required this.color, required this.onTap});
+  const _NovaQuickAction({required this.icon, required this.title, required this.color, required this.onTap, this.subtitle = ''});
   final IconData icon;
   final String title;
+  final String subtitle;
   final Color color;
   final VoidCallback onTap;
 
@@ -1092,6 +1094,7 @@ class _NovaQuickAction extends StatelessWidget {
             const SizedBox(height: 8),
             Text(title, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Color(0xFFE5F0FC), fontSize: 9, fontWeight: FontWeight.w800)),
+            if (subtitle.isNotEmpty) ...[const SizedBox(height: 2), Text(subtitle, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF9DB8D8), fontSize: 7, fontWeight: FontWeight.w600))],
           ])),
         ]),
       ),
@@ -1417,7 +1420,7 @@ class _NovaGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context)=>SizedBox(height:92,child:Column(children:[
     SizedBox(width:90,height:61,child:Stack(alignment:Alignment.center,children:[
-      Positioned.fill(child:CustomPaint(painter:_NovaGaugePainter(progress:value==null?null:(value!/100).clamp(0,1),color:color))),
+      Positioned.fill(child:CustomPaint(painter:_NovaGaugePainter(progress:value==null?null:(value!/100).clamp(0,1).toDouble(),color:color))),
       Positioned(top:28,child:Text(value==null?'—':value!.toStringAsFixed(0)+suffix,style:const TextStyle(color:Colors.white,fontSize:13,fontWeight:FontWeight.w900))),
     ])),
     Text(label,style:TextStyle(color:color,fontSize:10,fontWeight:FontWeight.w900)),
