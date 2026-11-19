@@ -15,6 +15,8 @@ abstract final class AppSecurityService {
   static const String _pinSaltKey = 'nova.app.pin.salt.v1';
   static const String _pinHashKey = 'nova.app.pin.hash.v1';
   static const String _refreshIntervalKey = 'nova.stream.refresh.interval.v1';
+  static const String _pinFailureCountKey = 'nova.app.pin.failures.v1';
+  static const String _pinLockoutUntilKey = 'nova.app.pin.lockout.until.v1';
   static const int _pinIterations = 80000;
   static const int _backupIterations = 180000;
   static final AesGcm _cipher = AesGcm.with256bits();
@@ -53,9 +55,11 @@ abstract final class AppSecurityService {
     final hash = await key.extractBytes();
     await _storage.write(key: _pinSaltKey, value: base64Encode(salt));
     await _storage.write(key: _pinHashKey, value: base64Encode(hash));
+    await clearPinFailures();
   }
 
   static Future<bool> verifyPin(String pin) async {
+    if (await getPinLockoutRemaining() != null) return false;
     final saltEncoded = await _storage.read(key: _pinSaltKey);
     final hashEncoded = await _storage.read(key: _pinHashKey);
     if (saltEncoded == null || hashEncoded == null) return false;
@@ -64,7 +68,17 @@ abstract final class AppSecurityService {
       final expected = base64Decode(hashEncoded);
       final key = await _deriveKey(pin, salt, iterations: _pinIterations);
       final actual = await key.extractBytes();
-      return _constantTimeEquals(actual, expected);
+      final matches = _constantTimeEquals(actual, expected);
+      if (matches) {
+        try {
+          await clearPinFailures();
+        } catch (_) {
+          // A correct PIN must still unlock if cleanup storage is temporarily unavailable.
+        }
+      } else {
+        await _recordPinFailure();
+      }
+      return matches;
     } catch (_) {
       return false;
     }
@@ -73,6 +87,36 @@ abstract final class AppSecurityService {
   static Future<void> clearPin() async {
     await _storage.delete(key: _pinSaltKey);
     await _storage.delete(key: _pinHashKey);
+    await clearPinFailures();
+  }
+
+  static Future<Duration?> getPinLockoutRemaining() async {
+    final raw = await _storage.read(key: _pinLockoutUntilKey);
+    final timestamp = int.tryParse(raw ?? '');
+    if (timestamp == null) return null;
+    final remaining = DateTime.fromMillisecondsSinceEpoch(timestamp).difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      await _storage.delete(key: _pinLockoutUntilKey);
+      return null;
+    }
+    return remaining;
+  }
+
+  static Future<void> _recordPinFailure() async {
+    final raw = await _storage.read(key: _pinFailureCountKey);
+    final previous = int.tryParse(raw ?? '') ?? 0;
+    final count = (previous < 0 ? 0 : previous) + 1;
+    final boundedCount = count > 15 ? 15 : count;
+    await _storage.write(key: _pinFailureCountKey, value: boundedCount.toString());
+    final lockout = PinAttemptPolicy.lockoutForFailureCount(boundedCount);
+    if (lockout == null) return;
+    final lockoutUntil = DateTime.now().add(lockout).millisecondsSinceEpoch;
+    await _storage.write(key: _pinLockoutUntilKey, value: lockoutUntil.toString());
+  }
+
+  static Future<void> clearPinFailures() async {
+    await _storage.delete(key: _pinFailureCountKey);
+    await _storage.delete(key: _pinLockoutUntilKey);
   }
 
   static bool _constantTimeEquals(List<int> a, List<int> b) {
@@ -179,6 +223,16 @@ abstract final class AppSecurityService {
   }
 }
 
+/// Progressive delay applied after repeated failed local PIN checks.
+abstract final class PinAttemptPolicy {
+  static Duration? lockoutForFailureCount(int failureCount) {
+    if (failureCount < 5) return null;
+    if (failureCount < 10) return const Duration(seconds: 30);
+    if (failureCount < 15) return const Duration(minutes: 2);
+    return const Duration(minutes: 5);
+  }
+}
+
 /// PIN gate shown at startup and after a prolonged background interval.
 class AppPinGate extends StatefulWidget {
   const AppPinGate({super.key, required this.child});
@@ -248,18 +302,38 @@ class _AppPinGateState extends State<AppPinGate> with WidgetsBindingObserver {
   Future<void> _unlock() async {
     if (_busy) return;
     setState(() { _busy = true; _error = null; });
-    final valid = await AppSecurityService.verifyPin(_pinController.text);
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (valid) {
-        _unlocked = true;
-        _error = null;
-        _pinController.clear();
-      } else {
-        _error = 'رمز PIN غير صحيح.';
+    try {
+      final remaining = await AppSecurityService.getPinLockoutRemaining();
+      if (remaining != null) {
+        if (!mounted) return;
+        setState(() {
+          _busy = false;
+          _error = 'المحاولات موقوفة مؤقتاً. أعد المحاولة بعد ${remaining.inSeconds.ceil()} ثانية.';
+        });
+        return;
       }
-    });
+      final valid = await AppSecurityService.verifyPin(_pinController.text);
+      final lockout = valid ? null : await AppSecurityService.getPinLockoutRemaining();
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        if (valid) {
+          _unlocked = true;
+          _error = null;
+          _pinController.clear();
+        } else if (lockout != null) {
+          _error = 'تم إيقاف المحاولات لمدة ${lockout.inSeconds.ceil()} ثانية.';
+        } else {
+          _error = 'رمز PIN غير صحيح.';
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'تعذر التحقق من PIN عبر التخزين الآمن.';
+      });
+    }
   }
 
   @override
