@@ -132,7 +132,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     final current = await _askSecret(title: 'التحقق من PIN الحالي', label: 'PIN الحالي', pin: true);
     if (current == null) return;
     if (!await AppSecurityService.verifyPin(current)) {
-      _message('رمز PIN الحالي غير صحيح.', isError: true);
+      _message('رمز PIN غير صحيح أو أن المحاولات موقوفة مؤقتاً.', isError: true);
       return;
     }
     final next = await _askSecret(title: 'تغيير PIN', label: 'PIN جديد من 4 إلى 8 أرقام', pin: true);
@@ -153,7 +153,7 @@ class _AppSettingsScreenState extends ConsumerState<AppSettingsScreen> {
     final current = await _askSecret(title: 'إيقاف قفل التطبيق', label: 'أدخل PIN الحالي', pin: true);
     if (current == null) return;
     if (!await AppSecurityService.verifyPin(current)) {
-      _message('رمز PIN الحالي غير صحيح.', isError: true);
+      _message('رمز PIN غير صحيح أو أن المحاولات موقوفة مؤقتاً.', isError: true);
       return;
     }
     await AppSecurityService.clearPin();
