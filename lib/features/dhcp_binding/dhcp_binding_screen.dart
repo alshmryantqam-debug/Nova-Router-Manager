@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/routeros_client.dart';
 import '../../core/network/routeros_verified_client.dart';
 import '../../core/providers/router_providers.dart';
+import 'ip_address_validator.dart';
 
 const _accent = Color(0xFF8B7CFF);
 const _panel = Color(0xFF111722);
@@ -169,7 +170,7 @@ class _BindingsState extends State<_Bindings> {
           if (s.isEmpty && ip.text.trim().isEmpty) return 'أدخل MAC أو IP'; return null;
         }),
         TextFormField(controller: ip, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'عنوان IP'), validator: (v) {
-          final s = (v ?? '').trim(); if (s.isNotEmpty && !RegExp(r'^[0-9a-fA-F:.]+(?:/\d{1,3})?$').hasMatch(s)) return 'صيغة IP غير صحيحة';
+          final s = (v ?? '').trim(); if (s.isNotEmpty && !isValidIpAddressOrCidr(s)) return 'صيغة IP غير صحيحة';
           if (s.isEmpty && mac.text.trim().isEmpty) return 'أدخل IP أو MAC'; return null;
         }),
         TextField(controller: server, decoration: const InputDecoration(labelText: 'خادم الهوتسبوت (اختياري)')),
