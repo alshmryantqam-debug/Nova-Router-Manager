@@ -234,9 +234,20 @@ abstract final class PinAttemptPolicy {
 }
 
 /// PIN gate shown at startup and after a prolonged background interval.
+typedef PinEnabledReader = Future<bool> Function();
+
 class AppPinGate extends StatefulWidget {
-  const AppPinGate({super.key, required this.child});
+  const AppPinGate({
+    super.key,
+    required this.child,
+    this.pinEnabledReader,
+  });
+
   final Widget child;
+  final PinEnabledReader? pinEnabledReader;
+
+  Future<bool> _readPinEnabled() =>
+      pinEnabledReader?.call() ?? AppSecurityService.isPinEnabled();
 
   @override
   State<AppPinGate> createState() => _AppPinGateState();
@@ -248,6 +259,7 @@ class _AppPinGateState extends State<AppPinGate> with WidgetsBindingObserver {
   bool _pinEnabled = false;
   bool _unlocked = false;
   bool _busy = false;
+  bool _storageUnavailable = false;
   String? _error;
   DateTime? _backgroundedAt;
 
@@ -266,14 +278,27 @@ class _AppPinGateState extends State<AppPinGate> with WidgetsBindingObserver {
   }
 
   Future<void> _loadLockState() async {
-    var enabled = false;
-    try { enabled = await AppSecurityService.isPinEnabled(); } catch (_) { enabled = false; }
-    if (!mounted) return;
-    setState(() {
-      _pinEnabled = enabled;
-      _unlocked = !enabled;
-      _ready = true;
-    });
+    try {
+      final enabled = await widget._readPinEnabled();
+      if (!mounted) return;
+      setState(() {
+        _pinEnabled = enabled;
+        _unlocked = !enabled;
+        _ready = true;
+        _storageUnavailable = false;
+        _error = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        // Never expose router controls when the lock state cannot be read.
+        _pinEnabled = true;
+        _unlocked = false;
+        _ready = true;
+        _storageUnavailable = true;
+        _error = 'تعذر قراءة حالة قفل التطبيق من التخزين الآمن. التطبيق مقفل احتياطياً.';
+      });
+    }
   }
 
   @override
@@ -289,18 +314,31 @@ class _AppPinGateState extends State<AppPinGate> with WidgetsBindingObserver {
     final pausedAt = _backgroundedAt;
     _backgroundedAt = null;
     if (pausedAt == null || DateTime.now().difference(pausedAt) < const Duration(seconds: 20)) return;
-    final enabled = await AppSecurityService.isPinEnabled();
-    if (!mounted) return;
-    setState(() {
-      _pinEnabled = enabled;
-      _unlocked = !enabled;
-      _error = null;
-      _pinController.clear();
-    });
+    try {
+      final enabled = await widget._readPinEnabled();
+      if (!mounted) return;
+      setState(() {
+        _pinEnabled = enabled;
+        _unlocked = !enabled;
+        _storageUnavailable = false;
+        _error = null;
+        _pinController.clear();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        // A storage failure on resume must also keep the app behind the lock.
+        _pinEnabled = true;
+        _unlocked = false;
+        _storageUnavailable = true;
+        _error = 'تعذر التحقق من حالة القفل بعد العودة. التطبيق مقفل احتياطياً.';
+        _pinController.clear();
+      });
+    }
   }
 
   Future<void> _unlock() async {
-    if (_busy) return;
+    if (_busy || _storageUnavailable) return;
     setState(() { _busy = true; _error = null; });
     try {
       final remaining = await AppSecurityService.getPinLockoutRemaining();
@@ -380,11 +418,19 @@ class _AppPinGateState extends State<AppPinGate> with WidgetsBindingObserver {
                 const SizedBox(height: 8),
                 Text(_error!, style: const TextStyle(color: Color(0xFFFF657A))),
               ],
+              if (_storageUnavailable) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: _busy ? null : _loadLockState,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('إعادة المحاولة'),
+                ),
+              ],
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _busy ? null : _unlock,
+                  onPressed: _busy || _storageUnavailable ? null : _unlock,
                   icon: _busy
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.lock_open_rounded),
