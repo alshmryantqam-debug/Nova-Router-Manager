@@ -571,7 +571,14 @@ class _RouterEditorSheetState extends ConsumerState<RouterEditorSheet> {
 
   @override
   void dispose() {
-    for (final controller in [_name, _host, _port, _username, _password]) {
+    for (final controller in [
+      _name,
+      _host,
+      _port,
+      _username,
+      _password,
+      _knockPorts,
+    ]) {
       controller.removeListener(_invalidateTest);
       controller.dispose();
     }
