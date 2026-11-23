@@ -579,10 +579,7 @@ class RouterOsClient {
     _connected = false;
     _authenticated = false;
     _socket = null;
-    _restHttpClient?.close(force: true);
-    _restHttpClient = null;
-    _restHttpClient?.close(force: true);
-    _restHttpClient = null;
+    _closeRestClient();
     final subscription = _socketSubscription;
     _socketSubscription = null;
     if (subscription != null) unawaited(subscription.cancel());
@@ -602,7 +599,14 @@ class RouterOsClient {
     if (_disposed) throw StateError('RouterOS client is closed');
   }
 
+  void _closeRestClient() {
+    final client = _restHttpClient;
+    _restHttpClient = null;
+    client?.close(force: true);
+  }
+
   Future<void> _closeSocketOnly() async {
+    _closeRestClient();
     final subscription = _socketSubscription;
     _socketSubscription = null;
     if (subscription != null) {
