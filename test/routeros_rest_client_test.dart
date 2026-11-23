@@ -135,4 +135,59 @@ void main() {
       await server.close(force: true);
     }
   });
+
+  test('closing REST client releases its persistent HTTP connection', () async {
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final requestReceived = Completer<void>();
+    final peerClosed = Completer<void>();
+    Socket? peer;
+
+    server.listen((socket) {
+      peer = socket;
+      var responded = false;
+      socket.listen(
+        (data) async {
+          if (responded) return;
+          responded = true;
+          if (!requestReceived.isCompleted) requestReceived.complete();
+          const body = '{"name":"nova-test"}';
+          socket.write(
+            'HTTP/1.1 200 OK\r\n'
+            'Content-Type: application/json\r\n'
+            'Content-Length: ${body.length}\r\n'
+            'Connection: keep-alive\r\n'
+            '\r\n'
+            '$body',
+          );
+          await socket.flush();
+        },
+        onDone: () {
+          if (!peerClosed.isCompleted) peerClosed.complete();
+        },
+        onError: (Object _) {
+          if (!peerClosed.isCompleted) peerClosed.complete();
+        },
+      );
+    });
+
+    final client = RouterOsClient(
+      host: '127.0.0.1',
+      port: server.port,
+      username: 'nova-test',
+      password: 'test-password',
+      useRestApi: true,
+      autoReconnect: false,
+    );
+
+    try {
+      await client.connect().timeout(const Duration(seconds: 3));
+      await requestReceived.future.timeout(const Duration(seconds: 3));
+      await client.close();
+      await peerClosed.future.timeout(const Duration(seconds: 3));
+    } finally {
+      await client.close();
+      peer?.destroy();
+      await server.close();
+    }
+  });
 }
