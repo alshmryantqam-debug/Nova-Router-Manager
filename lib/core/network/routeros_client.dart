@@ -101,7 +101,9 @@ class RouterOsClient {
 
   Future<void> _connectInternal() async {
     await _closeSocketOnly();
+    _ensureUsable();
     await _performPortKnock();
+    _ensureUsable();
     if (useRestApi) {
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 5)
@@ -112,6 +114,9 @@ class RouterOsClient {
       try {
         final response = await _restRequest('GET', '/system/identity')
             .timeout(requestTimeout);
+        if (_disposed || !identical(_restHttpClient, client)) {
+          throw StateError('RouterOS client is closed');
+        }
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw RouterOsException('REST API رفض تسجيل الدخول (HTTP ${response.statusCode}).');
         }
@@ -646,7 +651,12 @@ class RouterOsClient {
     final webPort = port == 8728 ? (useSsl ? 443 : 80) : port;
     final uri = Uri(scheme: scheme, host: host, port: webPort, path: '/rest${_restResource(resource)}');
     final credentials = base64Encode(utf8.encode('$username:$password'));
-    final request = await (_restHttpClient ?? HttpClient()).openUrl(method, uri);
+    _ensureUsable();
+    final httpClient = _restHttpClient;
+    if (httpClient == null) {
+      throw const RouterOsException('عميل REST غير متصل أو تم إغلاقه.');
+    }
+    final request = await httpClient.openUrl(method, uri);
     request.headers.set(HttpHeaders.authorizationHeader, 'Basic $credentials');
     request.headers.set(HttpHeaders.acceptHeader, 'application/json');
 
