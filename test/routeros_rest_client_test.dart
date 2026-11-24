@@ -6,6 +6,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_router_manager/core/network/routeros_client.dart';
 
 void main() {
+  test('closing during REST connection prevents a late reconnect', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    var requestCount = 0;
+    server.listen((request) async {
+      requestCount++;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write('{"name":"unexpected"}');
+      await request.response.close();
+    });
+
+    final client = RouterOsClient(
+      host: '127.0.0.1',
+      port: server.port,
+      username: 'nova-test',
+      password: 'test-password',
+      useRestApi: true,
+      autoReconnect: false,
+    );
+
+    try {
+      final connecting = client.connect();
+      await client.close();
+
+      await expectLater(connecting, throwsA(isA<StateError>()));
+      expect(client.isConnected, isFalse);
+      expect(client.isAuthenticated, isFalse);
+      expect(requestCount, 0);
+    } finally {
+      await client.close();
+      await server.close(force: true);
+    }
+  });
+
   test('REST mutations send RouterOS arguments as a JSON body', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final mutation = Completer<Map<String, String>>();
