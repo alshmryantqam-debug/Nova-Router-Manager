@@ -27,9 +27,12 @@ void main() {
 
     try {
       final connecting = client.connect();
+      final connectionFailure = expectLater(
+        connecting,
+        throwsA(isA<StateError>()),
+      );
       await client.close();
-
-      await expectLater(connecting, throwsA(isA<StateError>()));
+      await connectionFailure;
       expect(client.isConnected, isFalse);
       expect(client.isAuthenticated, isFalse);
       expect(requestCount, 0);
