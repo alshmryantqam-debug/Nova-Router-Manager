@@ -43,7 +43,7 @@ abstract final class AppSecurityService {
   static Future<bool> isPinEnabled() async {
     final salt = await _storage.read(key: _pinSaltKey);
     final hash = await _storage.read(key: _pinHashKey);
-    return salt != null && hash != null && salt.isNotEmpty && hash.isNotEmpty;
+    return PinStorageState.isEnabled(salt, hash);
   }
 
   static Future<void> setPin(String pin) async {
@@ -62,7 +62,7 @@ abstract final class AppSecurityService {
     if (await getPinLockoutRemaining() != null) return false;
     final saltEncoded = await _storage.read(key: _pinSaltKey);
     final hashEncoded = await _storage.read(key: _pinHashKey);
-    if (saltEncoded == null || hashEncoded == null) return false;
+    if (!PinStorageState.isEnabled(saltEncoded, hashEncoded)) return false;
     try {
       final salt = base64Decode(saltEncoded);
       final expected = base64Decode(hashEncoded);
@@ -220,6 +220,39 @@ abstract final class AppSecurityService {
     } catch (_) {
       throw const FormatException('تعذر فك التشفير. تأكد من كلمة المرور وسلامة الملف.');
     }
+  }
+}
+
+/// Validates the persisted PIN pair without treating partial/corrupt state as disabled.
+abstract final class PinStorageState {
+  static bool isEnabled(String? saltEncoded, String? hashEncoded) {
+    if (saltEncoded == null && hashEncoded == null) return false;
+    if (saltEncoded == null ||
+        hashEncoded == null ||
+        saltEncoded.isEmpty ||
+        hashEncoded.isEmpty) {
+      throw const FormatException(
+        'بيانات قفل PIN غير مكتملة. تم إبقاء التطبيق مقفلاً للحماية.',
+      );
+    }
+
+    late final List<int> salt;
+    late final List<int> hash;
+    try {
+      salt = base64Decode(saltEncoded);
+      hash = base64Decode(hashEncoded);
+    } on FormatException {
+      throw const FormatException(
+        'بيانات قفل PIN تالفة. تم إبقاء التطبيق مقفلاً للحماية.',
+      );
+    }
+
+    if (salt.length != 16 || hash.length != 32) {
+      throw const FormatException(
+        'أحجام بيانات قفل PIN غير صالحة. تم إبقاء التطبيق مقفلاً للحماية.',
+      );
+    }
+    return true;
   }
 }
 
