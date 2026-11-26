@@ -64,8 +64,8 @@ abstract final class AppSecurityService {
     final hashEncoded = await _storage.read(key: _pinHashKey);
     if (!PinStorageState.isEnabled(saltEncoded, hashEncoded)) return false;
     try {
-      final salt = base64Decode(saltEncoded);
-      final expected = base64Decode(hashEncoded);
+      final salt = base64Decode(saltEncoded!);
+      final expected = base64Decode(hashEncoded!);
       final key = await _deriveKey(pin, salt, iterations: _pinIterations);
       final actual = await key.extractBytes();
       final matches = _constantTimeEquals(actual, expected);
