@@ -47,4 +47,103 @@ void main() {
       throwsFormatException,
     );
   });
+  group('PIN credential persistence', () {
+    test('restores the previous PIN pair when the hash write fails', () async {
+      final values = <String, String>{
+        'salt': 'previous-salt',
+        'hash': 'previous-hash',
+      };
+      var failHashWrite = true;
+
+      Future<String?> read(String key) async => values[key];
+      Future<void> write(String key, String value) async {
+        if (key == 'hash' && failHashWrite) {
+          failHashWrite = false;
+          throw StateError('simulated secure-storage write failure');
+        }
+        values[key] = value;
+      }
+      Future<void> delete(String key) async {
+        values.remove(key);
+      }
+
+      await expectLater(
+        PinCredentialPersistence.writePair(
+          saltKey: 'salt',
+          hashKey: 'hash',
+          saltValue: 'new-salt',
+          hashValue: 'new-hash',
+          read: read,
+          write: write,
+          delete: delete,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(values, <String, String>{
+        'salt': 'previous-salt',
+        'hash': 'previous-hash',
+      });
+    });
+
+    test('removes a partial new PIN pair when setup fails', () async {
+      final values = <String, String>{};
+      var failHashWrite = true;
+
+      Future<String?> read(String key) async => values[key];
+      Future<void> write(String key, String value) async {
+        if (key == 'hash' && failHashWrite) {
+          failHashWrite = false;
+          throw StateError('simulated secure-storage write failure');
+        }
+        values[key] = value;
+      }
+      Future<void> delete(String key) async {
+        values.remove(key);
+      }
+
+      await expectLater(
+        PinCredentialPersistence.writePair(
+          saltKey: 'salt',
+          hashKey: 'hash',
+          saltValue: 'new-salt',
+          hashValue: 'new-hash',
+          read: read,
+          write: write,
+          delete: delete,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(values, isEmpty);
+    });
+
+    test('writes both values when secure storage is available', () async {
+      final values = <String, String>{};
+
+      Future<String?> read(String key) async => values[key];
+      Future<void> write(String key, String value) async {
+        values[key] = value;
+      }
+      Future<void> delete(String key) async {
+        values.remove(key);
+      }
+
+      await PinCredentialPersistence.writePair(
+        saltKey: 'salt',
+        hashKey: 'hash',
+        saltValue: 'new-salt',
+        hashValue: 'new-hash',
+        read: read,
+        write: write,
+        delete: delete,
+      );
+
+      expect(values, <String, String>{
+        'salt': 'new-salt',
+        'hash': 'new-hash',
+      });
+    });
+  });
+
 }
