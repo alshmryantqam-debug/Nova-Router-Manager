@@ -53,8 +53,15 @@ abstract final class AppSecurityService {
     final salt = _randomBytes(16);
     final key = await _deriveKey(pin, salt, iterations: _pinIterations);
     final hash = await key.extractBytes();
-    await _storage.write(key: _pinSaltKey, value: base64Encode(salt));
-    await _storage.write(key: _pinHashKey, value: base64Encode(hash));
+    await PinCredentialPersistence.writePair(
+      saltKey: _pinSaltKey,
+      hashKey: _pinHashKey,
+      saltValue: base64Encode(salt),
+      hashValue: base64Encode(hash),
+      read: (key) => _storage.read(key: key),
+      write: (key, value) => _storage.write(key: key, value: value),
+      delete: (key) => _storage.delete(key: key),
+    );
     await clearPinFailures();
   }
 
@@ -219,6 +226,52 @@ abstract final class AppSecurityService {
       rethrow;
     } catch (_) {
       throw const FormatException('تعذر فك التشفير. تأكد من كلمة المرور وسلامة الملف.');
+    }
+  }
+}
+
+/// Replaces the two-part PIN credential as one best-effort transaction.
+///
+/// If either secure-storage write fails, the previous pair is restored (or the
+/// newly-created partial pair is removed) before the original error is rethrown.
+abstract final class PinCredentialPersistence {
+  static Future<void> writePair({
+    required String saltKey,
+    required String hashKey,
+    required String saltValue,
+    required String hashValue,
+    required Future<String?> Function(String key) read,
+    required Future<void> Function(String key, String value) write,
+    required Future<void> Function(String key) delete,
+  }) async {
+    final previousSalt = await read(saltKey);
+    final previousHash = await read(hashKey);
+
+    try {
+      await write(saltKey, saltValue);
+      await write(hashKey, hashValue);
+    } catch (_) {
+      // Attempt both restores independently so one failed restore does not
+      // prevent the other key from being returned to its previous value.
+      try {
+        if (previousSalt == null) {
+          await delete(saltKey);
+        } else {
+          await write(saltKey, previousSalt);
+        }
+      } catch (_) {
+        // If secure storage remains unavailable, PinStorageState fails closed.
+      }
+      try {
+        if (previousHash == null) {
+          await delete(hashKey);
+        } else {
+          await write(hashKey, previousHash);
+        }
+      } catch (_) {
+        // If secure storage remains unavailable, PinStorageState fails closed.
+      }
+      rethrow;
     }
   }
 }
