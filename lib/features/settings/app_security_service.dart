@@ -99,20 +99,27 @@ abstract final class AppSecurityService {
 
   static Future<Duration?> getPinLockoutRemaining() async {
     final raw = await _storage.read(key: _pinLockoutUntilKey);
-    final timestamp = int.tryParse(raw ?? '');
-    if (timestamp == null) return null;
-    final remaining = DateTime.fromMillisecondsSinceEpoch(timestamp).difference(DateTime.now());
-    if (remaining <= Duration.zero) {
+    final now = DateTime.now();
+    final state = PinLockoutState.evaluate(raw, now);
+
+    if (state.needsRepair) {
+      final lockoutUntil = now.add(state.remaining!).millisecondsSinceEpoch;
+      await _storage.write(
+        key: _pinLockoutUntilKey,
+        value: lockoutUntil.toString(),
+      );
+      await _storage.write(key: _pinFailureCountKey, value: '15');
+    } else if (state.remaining == null && raw != null) {
       await _storage.delete(key: _pinLockoutUntilKey);
-      return null;
     }
-    return remaining;
+
+    return state.remaining;
   }
 
   static Future<void> _recordPinFailure() async {
     final raw = await _storage.read(key: _pinFailureCountKey);
-    final previous = int.tryParse(raw ?? '') ?? 0;
-    final count = (previous < 0 ? 0 : previous) + 1;
+    final previous = PinLockoutState.failureCount(raw);
+    final count = previous + 1;
     final boundedCount = count > 15 ? 15 : count;
     await _storage.write(key: _pinFailureCountKey, value: boundedCount.toString());
     final lockout = PinAttemptPolicy.lockoutForFailureCount(boundedCount);
@@ -316,6 +323,63 @@ abstract final class PinAttemptPolicy {
     if (failureCount < 10) return const Duration(seconds: 30);
     if (failureCount < 15) return const Duration(minutes: 2);
     return const Duration(minutes: 5);
+  }
+}
+
+/// Parsed lockout state. Corrupt or implausibly distant timestamps are repaired
+/// to the maximum supported lockout instead of silently disabling protection.
+class PinLockoutDecision {
+  const PinLockoutDecision({
+    required this.remaining,
+    this.needsRepair = false,
+  });
+
+  final Duration? remaining;
+  final bool needsRepair;
+}
+
+abstract final class PinLockoutState {
+  static const Duration recoveryDuration = Duration(minutes: 5);
+
+  static PinLockoutDecision evaluate(String? stored, DateTime now) {
+    if (stored == null) {
+      return const PinLockoutDecision(remaining: null);
+    }
+
+    final timestamp = int.tryParse(stored);
+    if (timestamp == null || timestamp <= 0) {
+      return const PinLockoutDecision(
+        remaining: recoveryDuration,
+        needsRepair: true,
+      );
+    }
+
+    try {
+      final remaining =
+          DateTime.fromMillisecondsSinceEpoch(timestamp).difference(now);
+      if (remaining <= Duration.zero) {
+        return const PinLockoutDecision(remaining: null);
+      }
+      if (remaining > recoveryDuration) {
+        return const PinLockoutDecision(
+          remaining: recoveryDuration,
+          needsRepair: true,
+        );
+      }
+      return PinLockoutDecision(remaining: remaining);
+    } catch (_) {
+      return const PinLockoutDecision(
+        remaining: recoveryDuration,
+        needsRepair: true,
+      );
+    }
+  }
+
+  static int failureCount(String? stored) {
+    if (stored == null) return 0;
+    final parsed = int.tryParse(stored);
+    if (parsed == null || parsed < 0) return 15;
+    return parsed > 15 ? 15 : parsed;
   }
 }
 
